@@ -605,8 +605,7 @@ const bomData = dashboardData.bom_data;
       if (!f.filled) {
         const tag = document.createElement('span');
         tag.className = 'missing-tag';
-        tag.textContent = f.field;
-        tag.title = f.category;
+        tag.textContent = f.field + '（' + f.category + '）';
         missingContainer.appendChild(tag);
       }
     });
