@@ -1,9 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- Dashboard-specific CSS -->
 <style>
-/* Override page background for dashboard */
 .page{background:var(--page-plane)}
 
 /* ===== KPI Row ===== */
@@ -42,37 +40,49 @@
 .stat-tile-value{font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--text-primary);line-height:1.2}
 .stat-tile-detail{font-size:11px;color:var(--text-secondary);margin-top:2px}
 
-/* ===== Dashboard 2-Column Grid ===== */
-.dash-grid{
+/* ===== Two-Column Chart Grid ===== */
+.chart-row{
   display:grid;
-  grid-template-columns:1.6fr 1fr;
+  grid-template-columns:1fr 1fr;
   gap:14px;
-  margin-bottom:22px;
+  margin-bottom:14px;
   align-items:start;
 }
-.dash-card{
+.chart-card{
   background:var(--surface-1);
   border:1px solid var(--border);
   border-radius:var(--radius);
   padding:24px;
   box-shadow:0 1px 3px rgba(0,0,0,0.03);
 }
-.dash-card-header{font-size:15px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
-.dash-card-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:18px}
-
-/* Left column */
-.dash-left{display:flex;flex-direction:column;gap:14px}
-
-/* Right column */
-.dash-right{display:flex;flex-direction:column;gap:14px}
+.chart-card-header{font-size:15px;font-weight:600;margin-bottom:4px}
+.chart-card-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:18px}
 
 /* ===== Bar Chart ===== */
-.bar-row{display:flex;align-items:center;margin-bottom:6px;cursor:default}
-.bar-label{width:160px;font-size:12px;color:var(--text-secondary);text-align:right;padding-right:12px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-row{
+  display:flex;align-items:center;margin-bottom:6px;cursor:pointer;
+  padding:2px 4px;border-radius:4px;transition:background .15s;
+}
+.bar-row:hover{background:rgba(42,120,214,0.04)}
+.bar-label{width:150px;font-size:12px;color:var(--text-secondary);text-align:right;padding-right:12px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar-track{flex:1;height:24px;position:relative;background:var(--gridline);border-radius:0 4px 4px 0}
 .bar-fill{height:100%;border-radius:0 4px 4px 0;transition:width .4s ease;position:relative;background:var(--s1)}
 .bar-value{position:absolute;right:-4px;top:50%;transform:translate(100%,-50%);font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;padding-left:6px}
-.bar-row:hover .bar-fill{filter:brightness(1.08)}
+
+/* Bar chart tooltip */
+.bar-tooltip{
+  display:none;
+  position:fixed;
+  background:rgba(0,0,0,0.82);
+  color:#fff;
+  padding:6px 12px;
+  border-radius:6px;
+  font-size:12px;
+  pointer-events:none;
+  z-index:999;
+  white-space:nowrap;
+  letter-spacing:0.01em;
+}
 
 /* ===== Donut ===== */
 .donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
@@ -136,7 +146,7 @@
 }
 .data-table .empty-cell{color:var(--text-muted);font-style:italic}
 
-/* ===== Full-width cards ===== */
+/* ===== Full-width card ===== */
 .full-card{
   background:var(--surface-1);
   border:1px solid var(--border);
@@ -150,7 +160,7 @@
 
 /* ===== Responsive ===== */
 @media(max-width:1100px){
-  .dash-grid{grid-template-columns:1fr}
+  .chart-row{grid-template-columns:1fr}
   .kpi-row{grid-template-columns:1fr 1fr 1fr}
   .hero-card{grid-column:1/-1}
 }
@@ -165,7 +175,6 @@
 @media(max-width:500px){
   .kpi-row{grid-template-columns:1fr}
   .supply-grid{grid-template-columns:1fr}
-  .donut-wrap{flex-direction:column;align-items:flex-start}
 }
 </style>
 
@@ -210,7 +219,6 @@
     {% endif %}
   </div>
 
-  <!-- Actions -->
   <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--gridline)">
     <div class="btn-group">
       {% if is_material %}
@@ -219,18 +227,15 @@
       <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-outline btn-sm">← 返回任务详情</a>
       <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-sm">📋 任务列表</a>
       {% endif %}
-
       {% if not is_material %}
       {% if user.role == 'member' and task.assigned_to == user.id and task.status in ('assigned','in_progress') %}
       <a href="{{ url_for('fill_task', task_id=task.id) }}" class="btn btn-primary btn-sm">✏️ 填写/编辑</a>
       {% endif %}
-
       {% if user.role == 'leader' and task.status == 'submitted' %}
       <form method="POST" action="{{ url_for('complete_task', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认审批通过？')">
         <button class="btn btn-success btn-sm">✓ 审批通过</button>
       </form>
       {% endif %}
-
       {% if user.role == 'leader' %}
       <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-outline btn-sm">⚙ 编辑任务</a>
       {% endif %}
@@ -268,70 +273,57 @@
   </div>
 </div>
 
-<!-- ===== Main Dashboard Grid: Left (BOM + Table) | Right (Donut + Completeness + Supply) ===== -->
-<div class="dash-grid">
-
-  <!-- ===== LEFT COLUMN ===== -->
-  <div class="dash-left">
-
-    <!-- BOM Bar Chart -->
-    <div class="dash-card">
-      <div class="dash-card-header">📊 BOM 用量分布 — 按产品线/阶段</div>
-      <div class="dash-card-subtitle">单位：pcs · 按用量降序排列</div>
-      <div id="bom-bar-chart" style="width:100%">
-        {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
-        <div class="empty-state"><div class="icon">📊</div><p>暂无 BOM 用量数据</p></div>
-        {% endif %}
-      </div>
-    </div>
-
-  </div><!-- /dash-left -->
-
-  <!-- ===== RIGHT COLUMN ===== -->
-  <div class="dash-right">
-
-    <!-- Donut Chart -->
-    <div class="dash-card">
-      <div class="dash-card-header">🍩 用量占比 — Top 6 产品线</div>
-      <div class="dash-card-subtitle">其余产品线合并为"其他"</div>
-      <div class="donut-wrap" id="donut-chart">
-        {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
-        <div class="empty-state" style="padding:20px"><p>暂无数据</p></div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Completeness -->
-    <div class="dash-card">
-      <div class="dash-card-header">📋 数据完整度</div>
-      <div class="dash-card-subtitle">{{ dashboard_data.total }} 个字段中，已填写 {{ dashboard_data.filled }} 个</div>
-      <div class="completeness-wrap" id="completeness-ring"></div>
-      <div class="missing-fields" id="missing-fields"></div>
-    </div>
-
-    <!-- Supply Chain -->
-    <div class="dash-card">
-      <div class="dash-card-header">🚚 供应链信息概览</div>
-      <div class="dash-card-subtitle">制造商、供应商、产地、产能等</div>
-      {% if dashboard_data.supply_data %}
-      <div class="supply-grid">
-        {% for item in dashboard_data.supply_data %}
-        <div class="supply-card">
-          <div class="supply-label">{{ item.label }}</div>
-          <div class="supply-value">{{ item.value }}</div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="empty-state" style="padding:20px"><p>暂无供应链数据</p></div>
+<!-- Row 1: BOM Bar Chart | Donut Chart -->
+<div class="chart-row">
+  <div class="chart-card">
+    <div class="chart-card-header">📊 BOM 用量分布 — 按产品线/阶段</div>
+    <div class="chart-card-subtitle">单位：pcs · 按用量降序排列</div>
+    <div id="bom-bar-chart">
+      {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
+      <div class="empty-state"><div class="icon">📊</div><p>暂无 BOM 用量数据</p></div>
       {% endif %}
     </div>
+  </div>
 
-  </div><!-- /dash-right -->
+  <div class="chart-card">
+    <div class="chart-card-header">🍩 用量占比 — Top 6 产品线</div>
+    <div class="chart-card-subtitle">其余产品线合并为"其他"</div>
+    <div class="donut-wrap" id="donut-chart">
+      {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
+      <div class="empty-state" style="padding:20px"><p>暂无数据</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
 
-</div><!-- /dash-grid -->
+<!-- Row 2: Completeness | Supply Chain -->
+<div class="chart-row">
+  <div class="chart-card">
+    <div class="chart-card-header">📋 数据完整度</div>
+    <div class="chart-card-subtitle">{{ dashboard_data.total }} 个字段中，已填写 {{ dashboard_data.filled }} 个</div>
+    <div class="completeness-wrap" id="completeness-ring"></div>
+    <div class="missing-fields" id="missing-fields"></div>
+  </div>
 
-<!-- Full Data Table (full width) -->
+  <div class="chart-card">
+    <div class="chart-card-header">🚚 供应链信息概览</div>
+    <div class="chart-card-subtitle">制造商、供应商、产地、产能等</div>
+    {% if dashboard_data.supply_data %}
+    <div class="supply-grid">
+      {% for item in dashboard_data.supply_data %}
+      <div class="supply-card">
+        <div class="supply-label">{{ item.label }}</div>
+        <div class="supply-value">{{ item.value }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:20px"><p>暂无供应链数据</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Full Data Table -->
 <div class="full-card">
   <div class="full-card-header">📋 完整数据明细</div>
   <div class="full-card-subtitle">全部 {{ dashboard_data.total }} 个字段</div>
@@ -362,7 +354,7 @@
   </div>
 </div>
 
-<!-- Activity Log (full width) -->
+<!-- Activity Log -->
 <div class="full-card">
   <div class="full-card-header">📜 操作记录</div>
   {% if logs %}
@@ -396,35 +388,38 @@
 
 </div>
 
+<!-- Tooltip element for bar chart -->
+<div class="bar-tooltip" id="bar-tooltip"></div>
+
 <script>
-// ===== Embedded Data =====
 const dashboardData = {{ dashboard_data | tojson | safe }};
 const bomData = dashboardData.bom_data;
 
-// ===== Bar Chart =====
+// ===== Bar Chart (with hover tooltip) =====
 (function() {
   const container = document.getElementById('bom-bar-chart');
-  if (!bomData.length || bomData.every(d => d.value === 0)) return;
-  const maxVal = Math.max(...bomData.map(d => d.value));
+  const tooltip = document.getElementById('bar-tooltip');
+  if (!bomData.length || bomData.every(function(d){ return d.value === 0; })) return;
+  const maxVal = Math.max.apply(null, bomData.map(function(d){ return d.value; }));
 
-  bomData.forEach(d => {
-    const row = document.createElement('div');
+  bomData.forEach(function(d) {
+    var row = document.createElement('div');
     row.className = 'bar-row';
 
-    const label = document.createElement('div');
+    var label = document.createElement('div');
     label.className = 'bar-label';
     label.textContent = d.label;
     label.title = d.label;
 
-    const track = document.createElement('div');
+    var track = document.createElement('div');
     track.className = 'bar-track';
 
-    const fill = document.createElement('div');
+    var fill = document.createElement('div');
     fill.className = 'bar-fill';
-    const pct = maxVal > 0 ? (d.value / maxVal * 100) : 0;
+    var pct = maxVal > 0 ? (d.value / maxVal * 100) : 0;
     fill.style.width = pct + '%';
 
-    const val = document.createElement('span');
+    var val = document.createElement('span');
     val.className = 'bar-value';
     val.textContent = d.value;
 
@@ -433,52 +428,68 @@ const bomData = dashboardData.bom_data;
     row.appendChild(label);
     row.appendChild(track);
 
-    row.addEventListener('mouseenter', function() { row.style.opacity = '0.85'; });
-    row.addEventListener('mouseleave', function() { row.style.opacity = '1'; });
+    // Hover tooltip
+    row.addEventListener('mouseenter', function(e) {
+      tooltip.textContent = d.label + ': ' + d.value + ' pcs';
+      tooltip.style.display = 'block';
+      row.style.background = 'rgba(42,120,214,0.06)';
+    });
+    row.addEventListener('mousemove', function(e) {
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top = (e.clientY - 32) + 'px';
+    });
+    row.addEventListener('mouseleave', function() {
+      tooltip.style.display = 'none';
+      row.style.background = '';
+    });
 
     container.appendChild(row);
   });
 })();
 
-// ===== Donut Chart =====
+// ===== Donut Chart (with SVG <title> tooltips) =====
 (function() {
-  const container = document.getElementById('donut-chart');
-  if (!bomData.length || bomData.every(d => d.value === 0)) return;
+  var container = document.getElementById('donut-chart');
+  if (!bomData.length || bomData.every(function(d){ return d.value === 0; })) return;
 
-  const sorted = [...bomData].sort((a, b) => b.value - a.value);
-  const top5 = sorted.slice(0, 5);
-  const otherSum = sorted.slice(5).reduce((s, d) => s + d.value, 0);
-  const segments = [...top5];
+  var sorted = bomData.slice().sort(function(a, b){ return b.value - a.value; });
+  var top5 = sorted.slice(0, 5);
+  var otherSum = sorted.slice(5).reduce(function(s, d){ return s + d.value; }, 0);
+  var segments = top5.slice();
   if (otherSum > 0) segments.push({ label: '其他（' + (sorted.length - 5) + '项）', value: otherSum });
 
-  const total = segments.reduce((s, d) => s + d.value, 0);
-  const catColors = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#c3c2b7'];
-  const radius = 80, cx = 90, cy = 90;
+  var total = segments.reduce(function(s, d){ return s + d.value; }, 0);
+  var catColors = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#c3c2b7'];
+  var radius = 80, cx = 90, cy = 90;
 
-  // SVG
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 180 180');
   svg.setAttribute('width', '160');
   svg.setAttribute('height', '160');
   svg.classList.add('donut-svg');
 
-  let startAngle = -Math.PI / 2;
+  var startAngle = -Math.PI / 2;
 
-  segments.forEach((seg, i) => {
-    const sliceAngle = (seg.value / total) * 2 * Math.PI;
-    const endAngle = startAngle + sliceAngle;
-    const x1 = cx + radius * Math.cos(startAngle);
-    const y1 = cy + radius * Math.sin(startAngle);
-    const x2 = cx + radius * Math.cos(endAngle);
-    const y2 = cy + radius * Math.sin(endAngle);
-    const largeArc = sliceAngle > Math.PI ? 1 : 0;
-    const d = `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+  segments.forEach(function(seg, i) {
+    var sliceAngle = (seg.value / total) * 2 * Math.PI;
+    var endAngle = startAngle + sliceAngle;
+    var x1 = cx + radius * Math.cos(startAngle);
+    var y1 = cy + radius * Math.sin(startAngle);
+    var x2 = cx + radius * Math.cos(endAngle);
+    var y2 = cy + radius * Math.sin(endAngle);
+    var largeArc = sliceAngle > Math.PI ? 1 : 0;
+    var d = 'M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 + ' A ' + radius + ' ' + radius + ' 0 ' + largeArc + ' 1 ' + x2 + ' ' + y2 + ' Z';
 
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', d);
     path.setAttribute('fill', catColors[i]);
     path.setAttribute('stroke', 'var(--surface-1)');
     path.setAttribute('stroke-width', '2');
+
+    // SVG <title> for native browser tooltip
+    var titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    titleEl.textContent = seg.label + ': ' + seg.value + ' (' + (seg.value / total * 100).toFixed(1) + '%)';
+    path.appendChild(titleEl);
 
     path.addEventListener('mouseenter', function() { this.style.opacity = '0.85'; });
     path.addEventListener('mouseleave', function() { this.style.opacity = '1'; });
@@ -488,7 +499,7 @@ const bomData = dashboardData.bom_data;
   });
 
   // Center text
-  const centerText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  var centerText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   centerText.setAttribute('x', cx);
   centerText.setAttribute('y', cy - 4);
   centerText.setAttribute('text-anchor', 'middle');
@@ -498,7 +509,7 @@ const bomData = dashboardData.bom_data;
   centerText.textContent = total;
   svg.appendChild(centerText);
 
-  const centerUnit = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  var centerUnit = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   centerUnit.setAttribute('x', cx);
   centerUnit.setAttribute('y', cy + 13);
   centerUnit.setAttribute('text-anchor', 'middle');
@@ -510,17 +521,17 @@ const bomData = dashboardData.bom_data;
   container.appendChild(svg);
 
   // Legend
-  const legend = document.createElement('div');
+  var legend = document.createElement('div');
   legend.className = 'donut-legend';
-  segments.forEach((seg, i) => {
-    const item = document.createElement('div');
+  segments.forEach(function(seg, i) {
+    var item = document.createElement('div');
     item.className = 'donut-legend-item';
-    const swatch = document.createElement('div');
+    var swatch = document.createElement('div');
     swatch.className = 'donut-swatch';
     swatch.style.backgroundColor = catColors[i];
-    const name = document.createElement('span');
+    var name = document.createElement('span');
     name.textContent = seg.label;
-    const val = document.createElement('span');
+    var val = document.createElement('span');
     val.className = 'donut-legend-value';
     val.textContent = seg.value + ' (' + (seg.value / total * 100).toFixed(1) + '%)';
     item.appendChild(swatch);
@@ -533,31 +544,29 @@ const bomData = dashboardData.bom_data;
 
 // ===== Completeness Ring =====
 (function() {
-  const container = document.getElementById('completeness-ring');
-  const pct = dashboardData.pct;
-  const filled = dashboardData.filled;
-  const empty = dashboardData.empty;
-  const total = dashboardData.total;
+  var container = document.getElementById('completeness-ring');
+  var pct = dashboardData.pct;
+  var filled = dashboardData.filled;
+  var empty = dashboardData.empty;
+  var total = dashboardData.total;
 
-  const radius = 52, cx = 62, cy = 62, circ = 2 * Math.PI * radius;
+  var radius = 52, cx = 62, cy = 62, circ = 2 * Math.PI * radius;
 
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 124 124');
   svg.setAttribute('width', '110');
   svg.setAttribute('height', '110');
   svg.classList.add('completeness-ring');
 
-  // Background ring
-  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  var bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', radius);
   bg.setAttribute('fill', 'none');
   bg.setAttribute('stroke', 'var(--gridline)');
   bg.setAttribute('stroke-width', '12');
   svg.appendChild(bg);
 
-  // Filled ring
   if (pct > 0) {
-    const fg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    var fg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     fg.setAttribute('cx', cx); fg.setAttribute('cy', cy); fg.setAttribute('r', radius);
     fg.setAttribute('fill', 'none');
     fg.setAttribute('stroke', 'var(--good)');
@@ -569,8 +578,7 @@ const bomData = dashboardData.bom_data;
     svg.appendChild(fg);
   }
 
-  // Center text
-  const pctText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  var pctText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   pctText.setAttribute('x', cx); pctText.setAttribute('y', cy - 3);
   pctText.setAttribute('text-anchor', 'middle');
   pctText.setAttribute('font-size', '22'); pctText.setAttribute('font-weight', '700');
@@ -578,7 +586,7 @@ const bomData = dashboardData.bom_data;
   pctText.textContent = pct + '%';
   svg.appendChild(pctText);
 
-  const subText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  var subText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   subText.setAttribute('x', cx); subText.setAttribute('y', cy + 14);
   subText.setAttribute('text-anchor', 'middle');
   subText.setAttribute('font-size', '10'); subText.setAttribute('fill', 'var(--text-muted)');
@@ -587,23 +595,21 @@ const bomData = dashboardData.bom_data;
 
   container.appendChild(svg);
 
-  // Detail text
-  const detail = document.createElement('div');
+  var detail = document.createElement('div');
   detail.className = 'completeness-detail';
   detail.innerHTML = '<strong>' + filled + '</strong> / ' + total + ' 个字段已填写' + (empty > 0 ? '，<strong>' + empty + '</strong> 个空白' : ' ✅');
   container.appendChild(detail);
 
-  // Missing tags
-  const missingContainer = document.getElementById('missing-fields');
+  var missingContainer = document.getElementById('missing-fields');
   if (empty === 0) {
-    const tag = document.createElement('span');
+    var tag = document.createElement('span');
     tag.className = 'filled-tag';
     tag.textContent = '✅ 全部字段已填写';
     missingContainer.appendChild(tag);
   } else {
     dashboardData.all_fields.forEach(function(f) {
       if (!f.filled) {
-        const tag = document.createElement('span');
+        var tag = document.createElement('span');
         tag.className = 'missing-tag';
         tag.textContent = f.field + '（' + f.category + '）';
         missingContainer.appendChild(tag);
