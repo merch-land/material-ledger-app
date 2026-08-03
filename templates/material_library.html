@@ -553,11 +553,11 @@ function togglePicker(e, colIdx) {
 
   closeAllPickers();
 
-  var th = e.target.closest('th');
-  if (!th) return;
+  var colHeader = e.target.closest('.col-header');
+  if (!colHeader) return;
 
   // Remove existing picker
-  var existing = th.querySelector('.col-picker');
+  var existing = colHeader.querySelector('.col-picker');
   if (existing) { existing.remove(); return; }
 
   var picker = document.createElement('div');
@@ -597,7 +597,7 @@ function togglePicker(e, colIdx) {
 
   picker.addEventListener('click', function(ev) { ev.stopPropagation(); });
 
-  th.appendChild(picker);
+  colHeader.appendChild(picker);
 
   // Focus search after render
   setTimeout(function(){ searchInput.focus(); }, 50);
