@@ -6,10 +6,10 @@
 /* Override page background for dashboard */
 .page{background:var(--page-plane)}
 
-/* Hero & KPI */
+/* ===== KPI Row ===== */
 .kpi-row{
   display:grid;
-  grid-template-columns:1fr repeat(4,1fr);
+  grid-template-columns:1.4fr repeat(4,1fr);
   gap:14px;
   margin-bottom:22px;
 }
@@ -30,66 +30,81 @@
   background:var(--surface-1);
   border:1px solid var(--border);
   border-radius:var(--radius);
-  padding:20px 22px;
+  padding:18px 20px;
   display:flex;
   flex-direction:column;
   justify-content:center;
   box-shadow:0 1px 3px rgba(0,0,0,0.03);
+  transition:all .2s;
 }
-.stat-tile-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;font-weight:500}
-.stat-tile-value{font-size:26px;font-weight:700;letter-spacing:-0.02em;color:var(--text-primary)}
+.stat-tile:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+.stat-tile-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;font-weight:500}
+.stat-tile-value{font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--text-primary);line-height:1.2}
 .stat-tile-detail{font-size:11px;color:var(--text-secondary);margin-top:2px}
 
-/* Chart Grid */
-.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
-.chart-card{
+/* ===== Dashboard 2-Column Grid ===== */
+.dash-grid{
+  display:grid;
+  grid-template-columns:1.6fr 1fr;
+  gap:14px;
+  margin-bottom:22px;
+  align-items:start;
+}
+.dash-card{
   background:var(--surface-1);
   border:1px solid var(--border);
   border-radius:var(--radius);
   padding:24px;
   box-shadow:0 1px 3px rgba(0,0,0,0.03);
 }
-.chart-card.full-width{grid-column:1/-1}
-.chart-title{font-size:15px;font-weight:600;margin-bottom:4px}
-.chart-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:18px}
+.dash-card-header{font-size:15px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.dash-card-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:18px}
 
-/* Bar Chart */
+/* Left column */
+.dash-left{display:flex;flex-direction:column;gap:14px}
+
+/* Right column */
+.dash-right{display:flex;flex-direction:column;gap:14px}
+
+/* ===== Bar Chart ===== */
 .bar-row{display:flex;align-items:center;margin-bottom:6px;cursor:default}
-.bar-label{width:180px;font-size:12px;color:var(--text-secondary);text-align:right;padding-right:12px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-label{width:160px;font-size:12px;color:var(--text-secondary);text-align:right;padding-right:12px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar-track{flex:1;height:24px;position:relative;background:var(--gridline);border-radius:0 4px 4px 0}
 .bar-fill{height:100%;border-radius:0 4px 4px 0;transition:width .4s ease;position:relative;background:var(--s1)}
 .bar-value{position:absolute;right:-4px;top:50%;transform:translate(100%,-50%);font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;padding-left:6px}
 .bar-row:hover .bar-fill{filter:brightness(1.08)}
 
-/* Donut */
-.donut-wrap{display:flex;align-items:center;gap:24px}
+/* ===== Donut ===== */
+.donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 .donut-svg{flex-shrink:0}
-.donut-legend{display:flex;flex-direction:column;gap:6px}
+.donut-legend{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
 .donut-legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)}
 .donut-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-.donut-legend-value{font-weight:600;color:var(--text-primary);margin-left:auto;padding-left:12px}
+.donut-legend-value{font-weight:600;color:var(--text-primary);margin-left:auto;padding-left:8px;font-size:11px;white-space:nowrap}
 
-/* Completeness */
-.completeness-wrap{display:flex;align-items:center;gap:18px;padding:8px 0}
+/* ===== Completeness ===== */
+.completeness-wrap{display:flex;align-items:center;gap:16px;padding:4px 0}
 .completeness-ring{flex-shrink:0}
 .completeness-detail{font-size:13px;color:var(--text-secondary)}
 .completeness-detail strong{color:var(--text-primary)}
-.missing-fields{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
-.missing-tag{background:#fef3f2;color:#b42318;border:1px solid #fecdca;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:500}
-.filled-tag{background:#ecfdf3;color:#067647;border:1px solid #abefc6;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:500}
+.missing-fields{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
+.missing-tag{background:#fef3f2;color:#b42318;border:1px solid #fecdca;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:500}
+.filled-tag{background:#ecfdf3;color:#067647;border:1px solid #abefc6;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:500}
 
-/* Supply */
-.supply-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+/* ===== Supply ===== */
+.supply-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .supply-card{
   background:var(--gridline);
   border-radius:8px;
-  padding:14px 16px;
+  padding:12px 14px;
+  transition:background .15s;
 }
-.supply-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
-.supply-value{font-size:14px;font-weight:600;color:var(--text-primary)}
+.supply-card:hover{background:rgba(42,120,214,0.06)}
+.supply-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px}
+.supply-value{font-size:13px;font-weight:600;color:var(--text-primary)}
 
-/* Data Table */
-.data-table-wrap{overflow-x:auto}
+/* ===== Data Table ===== */
+.data-table-wrap{overflow-x:auto;max-height:500px;overflow-y:auto}
 .data-table{
   width:100%;
   border-collapse:collapse;
@@ -105,29 +120,56 @@
   text-transform:uppercase;
   letter-spacing:0.04em;
   white-space:nowrap;
+  position:sticky;top:0;z-index:2;
   border-bottom:2px solid var(--baseline);
 }
 .data-table td{padding:10px 14px;border-bottom:1px solid var(--gridline);color:var(--text-primary);white-space:nowrap}
-.data-table tr:hover td{background:rgba(42,120,214,0.03)}
-.data-table .cat-header{background:var(--surface-1);color:var(--text-muted);font-size:11px;letter-spacing:0.05em;border-bottom:1px solid var(--baseline)}
+.data-table tbody tr:hover td{background:rgba(42,120,214,0.03)}
+.data-table .cat-header td{
+  background:var(--surface-1);
+  color:var(--text-muted);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:0.05em;
+  border-bottom:1px solid var(--baseline);
+  padding:8px 14px;
+}
 .data-table .empty-cell{color:var(--text-muted);font-style:italic}
 
-/* Responsive */
-@media(max-width:900px){
-  .kpi-row{grid-template-columns:1fr 1fr}
-  .chart-grid{grid-template-columns:1fr}
-  .supply-grid{grid-template-columns:repeat(2,1fr)}
-  .bar-label{width:120px;font-size:11px}
+/* ===== Full-width cards ===== */
+.full-card{
+  background:var(--surface-1);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:24px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.03);
+  margin-bottom:14px;
 }
-@media(max-width:600px){
+.full-card-header{font-size:15px;font-weight:600;margin-bottom:4px}
+.full-card-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:18px}
+
+/* ===== Responsive ===== */
+@media(max-width:1100px){
+  .dash-grid{grid-template-columns:1fr}
+  .kpi-row{grid-template-columns:1fr 1fr 1fr}
+  .hero-card{grid-column:1/-1}
+}
+@media(max-width:768px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .hero-card{grid-column:1/-1}
+  .hero-value{font-size:40px}
+  .donut-wrap{flex-direction:column;align-items:flex-start}
+  .bar-label{width:100px;font-size:11px}
+  .supply-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:500px){
   .kpi-row{grid-template-columns:1fr}
   .supply-grid{grid-template-columns:1fr}
-  .hero-value{font-size:40px}
   .donut-wrap{flex-direction:column;align-items:flex-start}
 }
 </style>
 
-<div style="max-width:1280px;margin:0 auto">
+<div style="max-width:1400px;margin:0 auto">
 
 <!-- Header -->
 <div class="card" style="margin-bottom:22px">
@@ -205,82 +247,94 @@
     <div class="hero-unit">pcs · 覆盖 12 个产品线/阶段</div>
   </div>
   <div class="stat-tile">
-    <div class="stat-tile-label">标准包装 SPQ</div>
+    <div class="stat-tile-label">📦 标准包装 SPQ</div>
     <div class="stat-tile-value">{{ task.spq or '-' }}</div>
     <div class="stat-tile-detail">pcs</div>
   </div>
   <div class="stat-tile">
-    <div class="stat-tile-label">最小起订 MOQ</div>
+    <div class="stat-tile-label">📐 最小起订 MOQ</div>
     <div class="stat-tile-value">{{ task.moq or '-' }}</div>
     <div class="stat-tile-detail">pcs</div>
   </div>
   <div class="stat-tile">
-    <div class="stat-tile-label">交期 L/T</div>
+    <div class="stat-tile-label">🚀 交期 L/T</div>
     <div class="stat-tile-value">{{ task.lead_time or '-' }}</div>
     <div class="stat-tile-detail">{{ task.lead_time or '' }}</div>
   </div>
   <div class="stat-tile">
-    <div class="stat-tile-label">峰值月产能</div>
+    <div class="stat-tile-label">📈 峰值月产能</div>
     <div class="stat-tile-value">{{ task.peak_monthly_capacity or '-' }}</div>
     <div class="stat-tile-detail">pcs / 月</div>
   </div>
 </div>
 
-<!-- Charts Row 1: BOM Bar Chart -->
-<div class="chart-grid">
-  <div class="chart-card full-width">
-    <div class="chart-title">BOM 用量分布 — 按产品线/阶段</div>
-    <div class="chart-subtitle">单位：pcs · 按用量降序</div>
-    <div id="bom-bar-chart" style="width:100%">
-      {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
-      <div class="empty-state"><div class="icon">📊</div><p>暂无 BOM 用量数据</p></div>
+<!-- ===== Main Dashboard Grid: Left (BOM + Table) | Right (Donut + Completeness + Supply) ===== -->
+<div class="dash-grid">
+
+  <!-- ===== LEFT COLUMN ===== -->
+  <div class="dash-left">
+
+    <!-- BOM Bar Chart -->
+    <div class="dash-card">
+      <div class="dash-card-header">📊 BOM 用量分布 — 按产品线/阶段</div>
+      <div class="dash-card-subtitle">单位：pcs · 按用量降序排列</div>
+      <div id="bom-bar-chart" style="width:100%">
+        {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
+        <div class="empty-state"><div class="icon">📊</div><p>暂无 BOM 用量数据</p></div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div><!-- /dash-left -->
+
+  <!-- ===== RIGHT COLUMN ===== -->
+  <div class="dash-right">
+
+    <!-- Donut Chart -->
+    <div class="dash-card">
+      <div class="dash-card-header">🍩 用量占比 — Top 6 产品线</div>
+      <div class="dash-card-subtitle">其余产品线合并为"其他"</div>
+      <div class="donut-wrap" id="donut-chart">
+        {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
+        <div class="empty-state" style="padding:20px"><p>暂无数据</p></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Completeness -->
+    <div class="dash-card">
+      <div class="dash-card-header">📋 数据完整度</div>
+      <div class="dash-card-subtitle">{{ dashboard_data.total }} 个字段中，已填写 {{ dashboard_data.filled }} 个</div>
+      <div class="completeness-wrap" id="completeness-ring"></div>
+      <div class="missing-fields" id="missing-fields"></div>
+    </div>
+
+    <!-- Supply Chain -->
+    <div class="dash-card">
+      <div class="dash-card-header">🚚 供应链信息概览</div>
+      <div class="dash-card-subtitle">制造商、供应商、产地、产能等</div>
+      {% if dashboard_data.supply_data %}
+      <div class="supply-grid">
+        {% for item in dashboard_data.supply_data %}
+        <div class="supply-card">
+          <div class="supply-label">{{ item.label }}</div>
+          <div class="supply-value">{{ item.value }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:20px"><p>暂无供应链数据</p></div>
       {% endif %}
     </div>
-  </div>
-</div>
 
-<!-- Charts Row 2: Donut + Completeness -->
-<div class="chart-grid">
-  <div class="chart-card">
-    <div class="chart-title">用量占比 — Top 6 产品线</div>
-    <div class="chart-subtitle">其余产品线合并为"其他"</div>
-    <div class="donut-wrap" id="donut-chart">
-      {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
-      <div class="empty-state" style="padding:20px"><p>暂无数据</p></div>
-      {% endif %}
-    </div>
-  </div>
+  </div><!-- /dash-right -->
 
-  <div class="chart-card">
-    <div class="chart-title">数据完整度</div>
-    <div class="chart-subtitle">{{ dashboard_data.total }} 个字段中，已填写 vs 未填写</div>
-    <div class="completeness-wrap" id="completeness-ring"></div>
-    <div class="missing-fields" id="missing-fields"></div>
-  </div>
-</div>
+</div><!-- /dash-grid -->
 
-<!-- Supply Chain -->
-<div class="chart-card full-width" style="margin-bottom:22px">
-  <div class="chart-title">供应链信息概览</div>
-  <div class="chart-subtitle">制造商、供应商、产地、产能等信息</div>
-  {% if dashboard_data.supply_data %}
-  <div class="supply-grid">
-    {% for item in dashboard_data.supply_data %}
-    <div class="supply-card">
-      <div class="supply-label">{{ item.label }}</div>
-      <div class="supply-value">{{ item.value }}</div>
-    </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="empty-state" style="padding:20px"><p>暂无供应链数据</p></div>
-  {% endif %}
-</div>
-
-<!-- Full Data Table -->
-<div class="chart-card full-width" style="margin-bottom:22px">
-  <div class="chart-title">完整数据明细</div>
-  <div class="chart-subtitle">全部 {{ dashboard_data.total }} 个字段</div>
+<!-- Full Data Table (full width) -->
+<div class="full-card">
+  <div class="full-card-header">📋 完整数据明细</div>
+  <div class="full-card-subtitle">全部 {{ dashboard_data.total }} 个字段</div>
   <div class="data-table-wrap">
     <table class="data-table">
       <thead>
@@ -295,7 +349,7 @@
         {% for item in dashboard_data.all_fields %}
         {% if item.category != ns.current_cat %}
         {% set ns.current_cat = item.category %}
-        <tr><td colspan="3" class="cat-header">{{ ns.current_cat }}</td></tr>
+        <tr class="cat-header"><td colspan="3">{{ ns.current_cat }}</td></tr>
         {% endif %}
         <tr>
           <td style="color:var(--text-muted);font-size:12px">{{ item.category }}</td>
@@ -308,9 +362,9 @@
   </div>
 </div>
 
-<!-- Activity Log -->
-<div class="chart-card full-width">
-  <div class="chart-title">📜 操作记录</div>
+<!-- Activity Log (full width) -->
+<div class="full-card">
+  <div class="full-card-header">📜 操作记录</div>
   {% if logs %}
   <div class="timeline">
     {% for log in logs %}
@@ -360,6 +414,7 @@ const bomData = dashboardData.bom_data;
     const label = document.createElement('div');
     label.className = 'bar-label';
     label.textContent = d.label;
+    label.title = d.label;
 
     const track = document.createElement('div');
     track.className = 'bar-track';
@@ -378,12 +433,8 @@ const bomData = dashboardData.bom_data;
     row.appendChild(label);
     row.appendChild(track);
 
-    row.addEventListener('mouseenter', function() {
-      row.style.opacity = '0.85';
-    });
-    row.addEventListener('mouseleave', function() {
-      row.style.opacity = '1';
-    });
+    row.addEventListener('mouseenter', function() { row.style.opacity = '0.85'; });
+    row.addEventListener('mouseleave', function() { row.style.opacity = '1'; });
 
     container.appendChild(row);
   });
@@ -402,13 +453,13 @@ const bomData = dashboardData.bom_data;
 
   const total = segments.reduce((s, d) => s + d.value, 0);
   const catColors = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#c3c2b7'];
-  const radius = 90, cx = 100, cy = 100;
+  const radius = 80, cx = 90, cy = 90;
 
   // SVG
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 200 200');
-  svg.setAttribute('width', '200');
-  svg.setAttribute('height', '200');
+  svg.setAttribute('viewBox', '0 0 180 180');
+  svg.setAttribute('width', '160');
+  svg.setAttribute('height', '160');
   svg.classList.add('donut-svg');
 
   let startAngle = -Math.PI / 2;
@@ -439,9 +490,9 @@ const bomData = dashboardData.bom_data;
   // Center text
   const centerText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   centerText.setAttribute('x', cx);
-  centerText.setAttribute('y', cy - 6);
+  centerText.setAttribute('y', cy - 4);
   centerText.setAttribute('text-anchor', 'middle');
-  centerText.setAttribute('font-size', '22');
+  centerText.setAttribute('font-size', '20');
   centerText.setAttribute('font-weight', '700');
   centerText.setAttribute('fill', 'var(--text-primary)');
   centerText.textContent = total;
@@ -449,9 +500,9 @@ const bomData = dashboardData.bom_data;
 
   const centerUnit = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   centerUnit.setAttribute('x', cx);
-  centerUnit.setAttribute('y', cy + 14);
+  centerUnit.setAttribute('y', cy + 13);
   centerUnit.setAttribute('text-anchor', 'middle');
-  centerUnit.setAttribute('font-size', '11');
+  centerUnit.setAttribute('font-size', '10');
   centerUnit.setAttribute('fill', 'var(--text-muted)');
   centerUnit.textContent = 'pcs 总量';
   svg.appendChild(centerUnit);
@@ -488,12 +539,12 @@ const bomData = dashboardData.bom_data;
   const empty = dashboardData.empty;
   const total = dashboardData.total;
 
-  const radius = 60, cx = 72, cy = 72, circ = 2 * Math.PI * radius;
+  const radius = 52, cx = 62, cy = 62, circ = 2 * Math.PI * radius;
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 144 144');
-  svg.setAttribute('width', '144');
-  svg.setAttribute('height', '144');
+  svg.setAttribute('viewBox', '0 0 124 124');
+  svg.setAttribute('width', '110');
+  svg.setAttribute('height', '110');
   svg.classList.add('completeness-ring');
 
   // Background ring
@@ -501,7 +552,7 @@ const bomData = dashboardData.bom_data;
   bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', radius);
   bg.setAttribute('fill', 'none');
   bg.setAttribute('stroke', 'var(--gridline)');
-  bg.setAttribute('stroke-width', '14');
+  bg.setAttribute('stroke-width', '12');
   svg.appendChild(bg);
 
   // Filled ring
@@ -510,7 +561,7 @@ const bomData = dashboardData.bom_data;
     fg.setAttribute('cx', cx); fg.setAttribute('cy', cy); fg.setAttribute('r', radius);
     fg.setAttribute('fill', 'none');
     fg.setAttribute('stroke', 'var(--good)');
-    fg.setAttribute('stroke-width', '14');
+    fg.setAttribute('stroke-width', '12');
     fg.setAttribute('stroke-linecap', 'round');
     fg.setAttribute('stroke-dasharray', (circ * pct / 100) + ' ' + (circ * (1 - pct / 100)));
     fg.setAttribute('stroke-dashoffset', circ / 4);
@@ -520,17 +571,17 @@ const bomData = dashboardData.bom_data;
 
   // Center text
   const pctText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  pctText.setAttribute('x', cx); pctText.setAttribute('y', cy - 4);
+  pctText.setAttribute('x', cx); pctText.setAttribute('y', cy - 3);
   pctText.setAttribute('text-anchor', 'middle');
-  pctText.setAttribute('font-size', '24'); pctText.setAttribute('font-weight', '700');
+  pctText.setAttribute('font-size', '22'); pctText.setAttribute('font-weight', '700');
   pctText.setAttribute('fill', 'var(--text-primary)');
   pctText.textContent = pct + '%';
   svg.appendChild(pctText);
 
   const subText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  subText.setAttribute('x', cx); subText.setAttribute('y', cy + 16);
+  subText.setAttribute('x', cx); subText.setAttribute('y', cy + 14);
   subText.setAttribute('text-anchor', 'middle');
-  subText.setAttribute('font-size', '11'); subText.setAttribute('fill', 'var(--text-muted)');
+  subText.setAttribute('font-size', '10'); subText.setAttribute('fill', 'var(--text-muted)');
   subText.textContent = '完整度';
   svg.appendChild(subText);
 
@@ -539,7 +590,7 @@ const bomData = dashboardData.bom_data;
   // Detail text
   const detail = document.createElement('div');
   detail.className = 'completeness-detail';
-  detail.innerHTML = '<strong>' + filled + '</strong> / ' + total + ' 个字段已填写，' + (empty > 0 ? '<strong>' + empty + '</strong> 个字段空白' : '全部填写完毕 ✅');
+  detail.innerHTML = '<strong>' + filled + '</strong> / ' + total + ' 个字段已填写' + (empty > 0 ? '，<strong>' + empty + '</strong> 个空白' : ' ✅');
   container.appendChild(detail);
 
   // Missing tags
@@ -554,7 +605,8 @@ const bomData = dashboardData.bom_data;
       if (!f.filled) {
         const tag = document.createElement('span');
         tag.className = 'missing-tag';
-        tag.textContent = f.field + '（' + f.category + '）';
+        tag.textContent = f.field;
+        tag.title = f.category;
         missingContainer.appendChild(tag);
       }
     });
