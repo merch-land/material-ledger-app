@@ -539,14 +539,6 @@ def view_task(task_id):
         WHERE a.task_id=? ORDER BY a.created_at DESC
     """, [task_id]).fetchall()
 
-    # 已完成任务 → 仪表盘视图
-    if task['status'] == 'completed':
-        dashboard_data = build_dashboard_data(task)
-        return render_template('task_dashboard.html',
-            user=user, task=task, logs=logs,
-            modules=MODULES, STATUS_MAP=STATUS_MAP,
-            dashboard_data=dashboard_data)
-
     return render_template('view_task.html',
         user=user, task=task, logs=logs,
         modules=MODULES, STATUS_MAP=STATUS_MAP)
