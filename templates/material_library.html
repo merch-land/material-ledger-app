@@ -127,6 +127,7 @@
 .page-info{font-size: 12px; color: var(--text-muted); padding: 0 8px}
 
 /* ===== Column Header Dropdown ===== */
+#material-table th{overflow: visible}
 .col-header{
   position: relative;
   user-select: none;
@@ -179,16 +180,17 @@
 .col-picker-search:focus{box-shadow: none}
 .col-picker-list{
   overflow-y: auto;
-  max-height: 280px;
+  max-height: 350px;
 }
 .col-picker-item{
-  padding: 8px 14px;
+  padding: 6px 14px;
   font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   transition: background .1s;
+  line-height: 1.4;
 }
 .col-picker-item:hover{background: var(--gridline)}
 .col-picker-item.active{background: rgba(42,120,214,0.08); color: var(--s1); font-weight: 600}
