@@ -48,7 +48,7 @@
 </div>
 {% endfor %}
 
-<form id="fill-form" method="POST">
+<form id="fill-form" method="POST" enctype="multipart/form-data">
 <input type="hidden" name="action" value="save">
 
 <!-- Tabs for Member Modules -->
@@ -127,6 +127,26 @@
   {% endif %}
 </div>
 {% endfor %}
+
+<!-- 附件上传 -->
+{% if not is_preview %}
+<div class="card">
+  <div class="card-header">📎 附件上传 <span style="font-size:12px;color:var(--text-muted);font-weight:400">（选填）</span></div>
+  <div style="margin-bottom:8px">
+    {% if task.attachment_file %}
+    {% set attach_parts = task.attachment_file.split('|', 1) %}
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--gridline);border-radius:8px;font-size:13px;margin-bottom:8px">
+      <span>📎 {{ attach_parts[0] }}</span>
+      <a href="{{ url_for('download_attachment', task_id=task.id) }}" class="btn btn-outline btn-sm">⬇ 下载</a>
+      <span style="font-size:11px;color:var(--text-muted)">上传新文件将替换旧文件</span>
+    </div>
+    {% endif %}
+  </div>
+  <input type="file" name="attachment" accept=".pdf,.doc,.docx,.xlsx,.xls,.jpg,.jpeg,.png,.zip,.rar"
+         style="padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:100%;max-width:400px;background:var(--surface-1)">
+  <div style="font-size:11px;color:var(--text-muted);margin-top:6px">支持 PDF、Word、Excel、图片、压缩包，最大 16MB</div>
+</div>
+{% endif %}
 
 <!-- Actions -->
 {% if not is_preview %}

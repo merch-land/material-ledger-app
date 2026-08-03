@@ -31,6 +31,8 @@ app = Flask(__name__)
 app.secret_key = 'material-ledger-secret-key-2024'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db')
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # ============================================================
 # Field Definitions (from 电子料台账表.xlsx, 39 fields / 4 modules)
@@ -157,6 +159,7 @@ def init_db():
         status TEXT NOT NULL DEFAULT 'assigned' CHECK(status IN ('assigned','in_progress','submitted','completed')),
         notes TEXT DEFAULT '',
         due_date TEXT DEFAULT '',
+        attachment_file TEXT DEFAULT '',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -222,6 +225,12 @@ def init_db():
             db.execute(f"ALTER TABLE users ADD COLUMN {col} {col_def}")
         except sqlite3.OperationalError:
             pass  # Column already exists
+
+    # Migrate: add attachment_file to tasks
+    try:
+        db.execute("ALTER TABLE tasks ADD COLUMN attachment_file TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
 
     count = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     if count == 0:
@@ -624,6 +633,18 @@ def fill_task(task_id):
         except:
             pass
 
+        # Handle file upload
+        uploaded_file = request.files.get('attachment')
+        if uploaded_file and uploaded_file.filename:
+            # 保留原扩展名，生成唯一文件名
+            import uuid
+            ext = os.path.splitext(uploaded_file.filename)[1]
+            safe_name = f"{uuid.uuid4().hex}{ext}"
+            file_path = os.path.join(UPLOAD_DIR, safe_name)
+            uploaded_file.save(file_path)
+            # 存储 原始文件名|存储文件名
+            updates['attachment_file'] = f"{uploaded_file.filename}|{safe_name}"
+
         new_status = 'submitted' if action == 'submit' else 'in_progress'
 
         set_parts = [f"{col}=?" for col in updates.keys()]
@@ -694,6 +715,48 @@ def complete_task(task_id):
 
     db.commit()
     flash('已审批通过！', 'success')
+    return redirect(url_for('view_task', task_id=task_id))
+
+@app.route('/task/<int:task_id>/attachment')
+@login_required
+def download_attachment(task_id):
+    """下载任务附件"""
+    db = get_db()
+    task = db.execute("SELECT attachment_file FROM tasks WHERE id=?", [task_id]).fetchone()
+    if not task or not task['attachment_file']:
+        flash('该任务没有附件', 'error')
+        return redirect(url_for('view_task', task_id=task_id))
+
+    parts = task['attachment_file'].split('|', 1)
+    if len(parts) != 2:
+        flash('附件记录异常', 'error')
+        return redirect(url_for('view_task', task_id=task_id))
+
+    original_name, stored_name = parts
+    file_path = os.path.join(UPLOAD_DIR, stored_name)
+    if not os.path.exists(file_path):
+        flash('附件文件不存在，可能已被删除', 'error')
+        return redirect(url_for('view_task', task_id=task_id))
+
+    return send_file(file_path, as_attachment=True, download_name=original_name)
+
+@app.route('/task/<int:task_id>/undo-complete', methods=['POST'])
+@login_required
+@leader_required
+def undo_complete_task(task_id):
+    """撤销审核：completed → submitted"""
+    user = get_current_user()
+    db = get_db()
+    task = db.execute("SELECT * FROM tasks WHERE id=?", [task_id]).fetchone()
+    if not task or task['status'] != 'completed':
+        flash('只能撤销"已完成"状态的任务', 'error')
+        return redirect(url_for('dashboard'))
+
+    db.execute("UPDATE tasks SET status='submitted', updated_at=CURRENT_TIMESTAMP WHERE id=?", [task_id])
+    db.execute("INSERT INTO activity_log (task_id, user_id, action, comment) VALUES (?,?,'undo_complete','↩️ 撤销审核，恢复为已提交状态')",
+               [task_id, user['id']])
+    db.commit()
+    flash('审核已撤销，任务恢复为"已提交"状态。', 'info')
     return redirect(url_for('view_task', task_id=task_id))
 
 @app.route('/task/<int:task_id>/withdraw', methods=['POST'])

@@ -51,6 +51,12 @@
     <button class="btn btn-warning" onclick="toggleReturn()">↩ 退回修改</button>
     {% endif %}
 
+    {% if user.role == 'leader' and task.status == 'completed' %}
+    <form method="POST" action="{{ url_for('undo_complete_task', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认撤销审核？任务将恢复为"已提交"状态。')">
+      <button class="btn btn-warning">↩ 撤销审核</button>
+    </form>
+    {% endif %}
+
     <!-- Dashboard button -->
     <a href="{{ url_for('task_dashboard', task_id=task.id) }}" class="btn btn-outline" style="margin-left:auto">
       📊 分析仪表盘
@@ -104,6 +110,18 @@
 </div>
 {% endfor %}
 
+<!-- Attachment -->
+{% if task.attachment_file %}
+{% set attach_parts = task.attachment_file.split('|', 1) %}
+<div class="card">
+  <div class="card-header">📎 附件</div>
+  <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+    <span style="font-size:14px">📄 {{ attach_parts[0] }}</span>
+    <a href="{{ url_for('download_attachment', task_id=task.id) }}" class="btn btn-outline btn-sm">⬇ 下载附件</a>
+  </div>
+</div>
+{% endif %}
+
 <!-- Activity Log -->
 <div class="card">
   <div class="card-header">📜 操作记录</div>
@@ -121,6 +139,7 @@
         {% elif log.action == 'completed' %}✅ 审批通过，标记为已完成
         {% elif log.action == 'returned' %}↩️ 退回修改
         {% elif log.action == 'edited' %}⚙️ 编辑了任务信息
+        {% elif log.action == 'undo_complete' %}↩️ 撤销审核，恢复为已提交
         {% else %}{{ log.action }}
         {% endif %}
         {% if log.comment %}

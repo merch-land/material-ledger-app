@@ -219,6 +219,10 @@
         <span>📅 截止: <strong style="color:{{ '#d03b3b' if task.due_date and task.due_date < current_date and task.status != 'completed' else 'var(--text-primary)' }}">{{ task.due_date or '未设置' }}</strong></span>
         {% endif %}
         <span>🕐 更新: {{ task.updated_at[:16] if task.updated_at else '-' }}</span>
+        {% if task.attachment_file %}
+        {% set aps = task.attachment_file.split('|', 1) %}
+        <span>📎 <a href="{{ url_for('download_attachment', task_id=task.id) }}">{{ aps[0] }}</a></span>
+        {% endif %}
       </div>
     </div>
     {% if not is_material %}
@@ -243,6 +247,11 @@
       {% if user.role == 'leader' and task.status == 'submitted' %}
       <form method="POST" action="{{ url_for('complete_task', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认审批通过？')">
         <button class="btn btn-success btn-sm">✓ 审批通过</button>
+      </form>
+      {% endif %}
+      {% if user.role == 'leader' and task.status == 'completed' %}
+      <form method="POST" action="{{ url_for('undo_complete_task', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认撤销审核？任务将恢复为已提交状态。')">
+        <button class="btn btn-warning btn-sm">↩ 撤销审核</button>
       </form>
       {% endif %}
       {% if user.role == 'leader' %}
@@ -377,6 +386,7 @@
         {% elif log.action == 'completed' %}✅ 审批通过，标记为已完成
         {% elif log.action == 'returned' %}↩️ 退回修改
         {% elif log.action == 'edited' %}⚙️ 编辑了任务信息
+        {% elif log.action == 'undo_complete' %}↩️ 撤销审核，恢复为已提交
         {% else %}{{ log.action }}
         {% endif %}
         {% if log.comment %}
