@@ -153,14 +153,12 @@
 
 .col-picker{
   display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 200;
+  position: fixed;
+  z-index: 999;
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
   min-width: 240px;
   max-height: 360px;
   overflow: hidden;
@@ -599,7 +597,11 @@ function togglePicker(e, colIdx) {
 
   picker.addEventListener('click', function(ev) { ev.stopPropagation(); });
 
-  colHeader.appendChild(picker);
+  // Append to body to avoid table clipping, position near header
+  document.body.appendChild(picker);
+  var rect = colHeader.getBoundingClientRect();
+  picker.style.top = (rect.bottom + 4) + 'px';
+  picker.style.left = rect.left + 'px';
 
   // Focus search after render
   setTimeout(function(){ searchInput.focus(); }, 50);
