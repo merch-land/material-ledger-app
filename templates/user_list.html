@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width:900px;margin:0 auto">
+<div style="max-width:1000px;margin:0 auto">
 
 <!-- User List -->
 <div class="card">
@@ -13,7 +13,9 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr><th>用户名</th><th>显示名</th><th>角色</th><th>密码状态</th><th>创建时间</th><th>操作</th></tr>
+        <tr>
+          <th>用户名</th><th>显示名</th><th>角色</th><th>物料库管理</th><th>密码状态</th><th>创建时间</th><th>操作</th>
+        </tr>
       </thead>
       <tbody>
         {% for u in all_users %}
@@ -21,9 +23,24 @@
           <td><strong>{{ u.username }}</strong></td>
           <td>{{ u.display_name }}</td>
           <td>
-            <span class="status-badge" class="{{ 'role-leader' if u.role=='leader' else 'role-member' }} role-badge">
+            <span class="status-badge role-badge {{ 'role-leader' if u.role=='leader' else 'role-member' }}">
               {{ '👔 Leader' if u.role == 'leader' else '👤 成员' }}
             </span>
+          </td>
+          <td>
+            {% if u.role == 'leader' %}
+            <span style="color:var(--good);font-size:12px">✅ 全部权限</span>
+            {% else %}
+            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+              <input type="checkbox"
+                     data-uid="{{ u.id }}"
+                     data-perm="manage_library"
+                     class="perm-toggle"
+                     {% if u.perms and u.perms.get('manage_library') %}checked{% endif %}
+                     onchange="togglePerm(this)">
+              <span class="perm-label">允许管理物料库</span>
+            </label>
+            {% endif %}
           </td>
           <td>
             {% if u.password_changed %}
@@ -74,9 +91,9 @@
 
 </div>
 
-<!-- Hidden reset password form -->
+<!-- Reset password modals -->
 {% for u in all_users %}
-<div id="reset-form-{{ u.id }}" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:200;display:none;align-items:center;justify-content:center">
+<div id="reset-form-{{ u.id }}" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:200;align-items:center;justify-content:center">
   <div style="background:var(--surface-1);border-radius:12px;padding:28px;width:380px;max-width:90vw">
     <h3 style="margin-bottom:16px">🔑 重置密码 — {{ u.display_name }}</h3>
     <form method="POST" action="{{ url_for('user_reset_password', uid=u.id) }}">
@@ -99,6 +116,27 @@ function showReset(uid, name) {
 }
 function hideReset(uid) {
   document.getElementById('reset-form-' + uid).style.display = 'none';
+}
+
+async function togglePerm(cb) {
+  var uid = cb.dataset.uid;
+  var perm = cb.dataset.perm;
+  var on = cb.checked;
+  try {
+    var resp = await fetch('/users/' + uid + '/permission', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({permission: perm, value: on})
+    });
+    var data = await resp.json();
+    if (data.error) {
+      alert('保存失败: ' + data.error);
+      cb.checked = !on;
+    }
+  } catch(e) {
+    alert('请求失败: ' + e.message);
+    cb.checked = !on;
+  }
 }
 </script>
 {% endblock %}

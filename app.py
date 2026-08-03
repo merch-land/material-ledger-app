@@ -147,6 +147,7 @@ def init_db():
         password_changed INTEGER DEFAULT 0,
         failed_attempts INTEGER DEFAULT 0,
         locked_until TEXT DEFAULT '',
+        permissions TEXT DEFAULT '{{}}',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -232,6 +233,12 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
+    # Migrate: add permissions to users
+    try:
+        db.execute("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '{}'")
+    except sqlite3.OperationalError:
+        pass
+
     count = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     if count == 0:
         users = [
@@ -292,6 +299,22 @@ def get_current_user():
         return None
     db = get_db()
     return db.execute("SELECT * FROM users WHERE id=?", [session['user_id']]).fetchone()
+
+def user_can(user, permission):
+    """检查用户是否有某项权限（Leader拥有所有权限）"""
+    if not user:
+        return False
+    if user['role'] == 'leader':
+        return True
+    try:
+        perms = json.loads(user['permissions'] or '{}')
+    except (json.JSONDecodeError, TypeError):
+        perms = {}
+    return perms.get(permission, False)
+
+def can_manage_library(user):
+    """检查用户是否可以管理物料库（删除、导入等）"""
+    return user_can(user, 'manage_library')
 
 @app.context_processor
 def inject_globals():
@@ -892,7 +915,16 @@ def user_list():
     user = get_current_user()
     db = get_db()
     users = db.execute("SELECT * FROM users ORDER BY role, created_at").fetchall()
-    return render_template('user_list.html', user=user, all_users=users)
+    # 为每个用户解析 permissions JSON
+    user_list = []
+    for u in users:
+        u_dict = dict(u)
+        try:
+            u_dict['perms'] = json.loads(u['permissions'] or '{}')
+        except (json.JSONDecodeError, TypeError):
+            u_dict['perms'] = {}
+        user_list.append(u_dict)
+    return render_template('user_list.html', user=user, all_users=user_list)
 
 @app.route('/users/add', methods=['POST'])
 @login_required
@@ -945,6 +977,33 @@ def user_reset_password(uid):
             flash(f'{target["display_name"]} 的密码已重置！下次登录需重新设置密码。', 'success')
 
     return redirect(url_for('user_list'))
+
+@app.route('/users/<int:uid>/permission', methods=['POST'])
+@login_required
+@leader_required
+def user_permission(uid):
+    """Leader 为成员设置权限"""
+    db = get_db()
+    target = db.execute("SELECT * FROM users WHERE id=?", [uid]).fetchone()
+    if not target:
+        return jsonify({'error': '用户不存在'}), 404
+    if target['role'] == 'leader':
+        return jsonify({'error': 'Leader 拥有全部权限，无需单独设置'}), 400
+
+    data = request.get_json()
+    perm_name = data.get('permission', '')
+    perm_value = data.get('value', False)
+
+    try:
+        perms = json.loads(target['permissions'] or '{}')
+    except (json.JSONDecodeError, TypeError):
+        perms = {}
+    perms[perm_name] = bool(perm_value)
+
+    db.execute("UPDATE users SET permissions=? WHERE id=?",
+               [json.dumps(perms, ensure_ascii=False), uid])
+    db.commit()
+    return jsonify({'success': True})
 
 # ============================================================
 # API — Stats polling
@@ -1390,11 +1449,16 @@ def material_library():
 
     SOURCE_LABELS = {'task': '任务同步', 'manual': '手动录入', 'import': 'Excel导入'}
 
+    # 转为 dict 列表供前端 JS 使用
+    materials_json = json.dumps([dict(m) for m in materials], ensure_ascii=False)
+
     return render_template('material_library.html',
         user=user, materials=materials, modules=MODULES,
         total=total, page=page, total_pages=total_pages, per_page=per_page,
         search=search, product=product, manufacturer=manufacturer, supplier=supplier,
-        SOURCE_LABELS=SOURCE_LABELS)
+        SOURCE_LABELS=SOURCE_LABELS,
+        materials_json=materials_json,
+        can_manage=can_manage_library(user))
 
 @app.route('/materials/<int:mat_id>')
 @login_required
@@ -1449,8 +1513,11 @@ def material_dashboard(mat_id):
 
 @app.route('/materials/<int:mat_id>/delete', methods=['POST'])
 @login_required
-@leader_required
 def material_delete(mat_id):
+    user = get_current_user()
+    if not can_manage_library(user):
+        flash('无权限：需要物料库管理权限', 'error')
+        return redirect(url_for('material_library'))
     db = get_db()
     mat = db.execute("SELECT * FROM material_library WHERE id=?", [mat_id]).fetchone()
     if not mat:

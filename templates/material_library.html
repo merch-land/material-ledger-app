@@ -126,6 +126,97 @@
 .page-btn.disabled{opacity: 0.4; pointer-events: none; cursor: default}
 .page-info{font-size: 12px; color: var(--text-muted); padding: 0 8px}
 
+/* ===== Column Header Dropdown ===== */
+.col-header{
+  position: relative;
+  user-select: none;
+  white-space: nowrap;
+}
+.col-header-label{
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background .15s;
+}
+.col-header-label:hover{background: rgba(42,120,214,0.08)}
+.col-header-arrow{
+  font-size: 9px;
+  color: var(--text-muted);
+  transition: transform .15s;
+  margin-left: 2px;
+}
+.col-header-label:hover .col-header-arrow{color: var(--s1)}
+
+.col-picker{
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 200;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  min-width: 240px;
+  max-height: 360px;
+  overflow: hidden;
+}
+.col-picker.open{display: block}
+.col-picker-search{
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 1px solid var(--gridline);
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  outline: none;
+}
+.col-picker-search:focus{box-shadow: none}
+.col-picker-list{
+  overflow-y: auto;
+  max-height: 280px;
+}
+.col-picker-item{
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background .1s;
+}
+.col-picker-item:hover{background: var(--gridline)}
+.col-picker-item.active{background: rgba(42,120,214,0.08); color: var(--s1); font-weight: 600}
+.col-picker-item .col-picker-cat{
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+.col-picker-no-results{
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Reset button */
+.col-reset-btn{
+  font-size: 11px;
+  color: var(--s1);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: none;
+  font-family: inherit;
+}
+.col-reset-btn:hover{background: rgba(42,120,214,0.06); border-color: var(--s1)}
+
 /* Modal */
 .modal-overlay{
   position: fixed;
@@ -221,64 +312,23 @@
 <div class="stats-bar">
   <span>共 <strong>{{ total }}</strong> 条物料记录</span>
   <div class="btn-group">
+    {% if can_manage %}
+    <button class="btn btn-outline btn-sm col-reset-btn" onclick="resetColumns()" id="reset-btn" style="display:none">↺ 恢复默认列</button>
+    {% endif %}
     <a href="{{ url_for('export_materials') }}" class="btn btn-outline btn-sm">📥 导出全部</a>
     <a href="{{ url_for('import_page') }}" class="btn btn-primary btn-sm">📤 导入Excel</a>
   </div>
 </div>
 
 <!-- Table -->
-<div class="card" style="padding:0;overflow:hidden">
+<div class="card" style="padding:0;overflow:visible">
   <div class="table-wrap">
-    <table>
+    <table id="material-table">
       <thead>
-        <tr>
-          <th>物料编码</th>
-          <th>物料名称</th>
-          <th>物料型号</th>
-          <th>品牌/制造商</th>
-          <th>供应商</th>
-          <th>币别</th>
-          <th>单价未税</th>
-          <th>来源</th>
-          <th>更新时间</th>
-          <th>操作</th>
-        </tr>
+        <tr id="table-head"></tr>
       </thead>
-      <tbody>
-        {% if materials %}
-        {% for m in materials %}
-        <tr>
-          <td><strong>{{ m.material_code or '-' }}</strong></td>
-          <td>{{ m.material_name or '-' }}</td>
-          <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">{{ m.material_model or '-' }}</td>
-          <td>{{ m.manufacturer or '-' }}</td>
-          <td>{{ m.supplier or '-' }}</td>
-          <td>{{ m.currency or '-' }}</td>
-          <td>{{ m.unit_price_untaxed or '-' }}</td>
-          <td>
-            <span class="source-badge source-{{ m.source_type or 'task' }}">
-              {{ SOURCE_LABELS.get(m.source_type or 'task', m.source_type) }}
-            </span>
-          </td>
-          <td style="color:var(--text-muted);font-size:12px">{{ m.updated_at[:16] if m.updated_at else '-' }}</td>
-          <td>
-            <div class="btn-group">
-              <button class="btn btn-outline btn-sm" onclick="openDetail({{ m.id }})">详情</button>
-              {% if m.source_task_id %}
-              <a href="{{ url_for('task_dashboard', task_id=m.source_task_id) }}" class="btn btn-outline btn-sm" title="分析仪表盘">📊</a>
-              {% else %}
-              <a href="{{ url_for('material_dashboard', mat_id=m.id) }}" class="btn btn-outline btn-sm" title="分析仪表盘">📊</a>
-              {% endif %}
-              {% if user.role == 'leader' %}
-              <form method="POST" action="{{ url_for('material_delete', mat_id=m.id) }}" style="display:inline" onsubmit="return confirm('确认删除该物料记录？')">
-                <button class="btn btn-danger btn-sm">🗑</button>
-              </form>
-              {% endif %}
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-        {% else %}
+      <tbody id="table-body">
+        {% if not materials %}
         <tr>
           <td colspan="10">
             <div class="empty-state">
@@ -338,9 +388,235 @@
 </div>
 
 <script>
-const searchWrap = document.getElementById('search-wrap');
-const searchInput = document.getElementById('search-input');
-const clearBtn = document.getElementById('clear-search');
+// ===== Embedded Data =====
+const ALL_MATERIALS = {{ materials_json | safe }};
+const CAN_MANAGE = {{ 'true' if can_manage else 'false' }};
+const SOURCE_LABELS = {{ SOURCE_LABELS | tojson | safe }};
+
+// ===== Field Definitions =====
+const ALL_FIELDS = [
+  // 料件信息
+  {col:'unique_id', label:'唯一编号', cat:'料件信息'},
+  {col:'product', label:'产品', cat:'料件信息'},
+  {col:'material_code', label:'物料编码', cat:'料件信息'},
+  {col:'material_name', label:'物料名称', cat:'料件信息'},
+  {col:'material_model', label:'物料型号', cat:'料件信息'},
+  {col:'material_desc', label:'物料描述', cat:'料件信息'},
+  // BOM用量
+  {col:'bom_2k_v2', label:'2K V2', cat:'BOM用量'},
+  {col:'bom_2k_v5', label:'2K V5', cat:'BOM用量'},
+  {col:'bom_s21_b0_ti', label:'S2.1 B0 TI', cat:'BOM用量'},
+  {col:'bom_s20_b0_rtw', label:'S2.0 B0 锐泰微', cat:'BOM用量'},
+  {col:'bom_f_project', label:'F项目', cat:'BOM用量'},
+  {col:'bom_forward', label:'前向用量', cat:'BOM用量'},
+  {col:'bom_general', label:'Bom用量（通用）', cat:'BOM用量'},
+  {col:'bom_24t24r_sat', label:'24T24R卫星', cat:'BOM用量'},
+  {col:'bom_24t24r_soc', label:'24T24R SOC', cat:'BOM用量'},
+  {col:'bom_sfr2_4d', label:'SFR2-4D', cat:'BOM用量'},
+  {col:'bom_nio_8t8r', label:'NIO 8T8R', cat:'BOM用量'},
+  {col:'bom_horizon_8t8r', label:'地平线 8T8R', cat:'BOM用量'},
+  {col:'bom_total', label:'总计', cat:'BOM用量'},
+  // 商流信息
+  {col:'unit', label:'单位', cat:'商流信息'},
+  {col:'manufacturer', label:'品牌/制造商', cat:'商流信息'},
+  {col:'supplier', label:'供应商', cat:'商流信息'},
+  {col:'currency', label:'币别', cat:'商流信息'},
+  {col:'unit_price_untaxed', label:'单价未税', cat:'商流信息'},
+  {col:'unit_price_taxed', label:'单价含税', cat:'商流信息'},
+  {col:'spq', label:'SPQ', cat:'商流信息'},
+  {col:'moq', label:'MOQ', cat:'商流信息'},
+  {col:'lead_time', label:'L/T交期', cat:'商流信息'},
+  {col:'production_time', label:'量产时间', cat:'商流信息'},
+  {col:'factory_monthly_output', label:'原厂月出货量', cat:'商流信息'},
+  {col:'distributor_monthly_output', label:'代理商月出货量', cat:'商流信息'},
+  {col:'automotive_applications', label:'车厂应用实绩', cat:'商流信息'},
+  {col:'wafer_origin', label:'晶圆产地', cat:'商流信息'},
+  {col:'packaging_test_origin', label:'封测产地', cat:'商流信息'},
+  {col:'shipping_origin', label:'出货地', cat:'商流信息'},
+  {col:'peak_monthly_capacity', label:'峰值月产能', cat:'商流信息'},
+  {col:'cancel_window_days', label:'Cancel Window Days', cat:'商流信息'},
+  // 其他
+  {col:'update_frequency', label:'更新频次', cat:'其他'},
+  {col:'attachment_note', label:'附件备注', cat:'其他'},
+  // 元数据
+  {col:'source_type', label:'来源', cat:'元数据'},
+  {col:'updated_at', label:'更新时间', cat:'元数据'},
+  {col:'created_at', label:'创建时间', cat:'元数据'},
+];
+
+const DEFAULT_COLS = ['material_code','material_name','material_model','manufacturer','supplier','currency','unit_price_untaxed','source_type','updated_at'];
+
+// ===== State =====
+let columnConfig = [];
+let openPickerCol = null;
+
+// ===== Init =====
+function initColumns() {
+  if (CAN_MANAGE) {
+    const saved = localStorage.getItem('ml_columns');
+    if (saved) {
+      try { columnConfig = JSON.parse(saved); } catch(e) {}
+    }
+  }
+  if (!columnConfig || columnConfig.length === 0) {
+    columnConfig = DEFAULT_COLS.slice();
+  }
+  renderTable();
+}
+
+function saveColumns() {
+  if (!CAN_MANAGE) return;
+  localStorage.setItem('ml_columns', JSON.stringify(columnConfig));
+  const isDefault = JSON.stringify(columnConfig) === JSON.stringify(DEFAULT_COLS);
+  document.getElementById('reset-btn').style.display = isDefault ? 'none' : 'inline-flex';
+}
+
+function resetColumns() {
+  columnConfig = DEFAULT_COLS.slice();
+  saveColumns();
+  renderTable();
+  closeAllPickers();
+}
+
+function getField(col) {
+  return ALL_FIELDS.find(function(f){ return f.col === col; }) || {col:col, label:col, cat:''};
+}
+
+function fmtValue(col, val) {
+  if (val === null || val === undefined || val === '') return '-';
+  if (col === 'source_type') return SOURCE_LABELS[val] || val;
+  if (col === 'updated_at' || col === 'created_at') return String(val).substring(0, 16);
+  return String(val);
+}
+
+// ===== Render =====
+function renderTable() {
+  // Head
+  var headHtml = '';
+  for (var i = 0; i < columnConfig.length; i++) {
+    var f = getField(columnConfig[i]);
+    headHtml += '<th><div class="col-header" data-col-idx="' + i + '">';
+    headHtml += '<span class="col-header-label" onclick="togglePicker(event, ' + i + ')">';
+    headHtml += escapeHtml(f.label);
+    if (CAN_MANAGE) {
+      headHtml += '<span class="col-header-arrow">▼</span>';
+    }
+    headHtml += '</span>';
+    headHtml += '</div></th>';
+  }
+  headHtml += '<th>操作</th>';
+  document.getElementById('table-head').innerHTML = headHtml;
+
+  // Body
+  var bodyHtml = '';
+  for (var r = 0; r < ALL_MATERIALS.length; r++) {
+    var m = ALL_MATERIALS[r];
+    bodyHtml += '<tr>';
+    for (var c = 0; c < columnConfig.length; c++) {
+      var col = columnConfig[c];
+      var val = fmtValue(col, m[col]);
+      var cellClass = '';
+      if (col === 'material_code') cellClass = ' style="font-weight:600"';
+      if (col === 'updated_at' || col === 'created_at') cellClass = ' style="color:var(--text-muted);font-size:12px"';
+      if (col === 'source_type') {
+        var srcType = m['source_type'] || 'task';
+        bodyHtml += '<td><span class="source-badge source-' + srcType + '">' + val + '</span></td>';
+      } else if (col === 'material_model') {
+        bodyHtml += '<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis"' + cellClass + '>' + escapeHtml(val) + '</td>';
+      } else {
+        bodyHtml += '<td' + cellClass + '>' + escapeHtml(val) + '</td>';
+      }
+    }
+    // Actions
+    bodyHtml += '<td><div class="btn-group">';
+    bodyHtml += '<button class="btn btn-outline btn-sm" onclick="openDetail(' + m.id + ')">详情</button>';
+    if (m.source_task_id) {
+      bodyHtml += '<a href="/task/' + m.source_task_id + '/dashboard" class="btn btn-outline btn-sm" title="分析仪表盘">📊</a>';
+    } else {
+      bodyHtml += '<a href="/materials/' + m.id + '/dashboard" class="btn btn-outline btn-sm" title="分析仪表盘">📊</a>';
+    }
+    if (CAN_MANAGE) {
+      bodyHtml += '<form method="POST" action="/materials/' + m.id + '/delete" style="display:inline" onsubmit="return confirm(\'确认删除该物料记录？\')">';
+      bodyHtml += '<button class="btn btn-danger btn-sm">🗑</button></form>';
+    }
+    bodyHtml += '</div></td>';
+    bodyHtml += '</tr>';
+  }
+  document.getElementById('table-body').innerHTML = bodyHtml;
+  saveColumns();
+}
+
+// ===== Column Picker =====
+function togglePicker(e, colIdx) {
+  e.stopPropagation();
+  if (!CAN_MANAGE) return;
+
+  closeAllPickers();
+
+  var th = e.target.closest('th');
+  if (!th) return;
+
+  // Remove existing picker
+  var existing = th.querySelector('.col-picker');
+  if (existing) { existing.remove(); return; }
+
+  var picker = document.createElement('div');
+  picker.className = 'col-picker open';
+  picker.innerHTML = '<input type="text" class="col-picker-search" placeholder="搜索字段...">'
+    + '<div class="col-picker-list"></div>';
+
+  var searchInput = picker.querySelector('.col-picker-search');
+  var listEl = picker.querySelector('.col-picker-list');
+
+  function renderList(filter) {
+    filter = (filter || '').toLowerCase();
+    var currentCol = columnConfig[colIdx];
+    var html = '';
+    var count = 0;
+    for (var i = 0; i < ALL_FIELDS.length; i++) {
+      var f = ALL_FIELDS[i];
+      if (filter && f.label.toLowerCase().indexOf(filter) === -1 && f.col.toLowerCase().indexOf(filter) === -1) continue;
+      var activeClass = f.col === currentCol ? ' active' : '';
+      html += '<div class="col-picker-item' + activeClass + '" data-col="' + f.col + '" onclick="selectColumn(' + colIdx + ',\'' + f.col + '\')">';
+      html += escapeHtml(f.label);
+      html += '<span class="col-picker-cat">' + escapeHtml(f.cat) + '</span>';
+      html += '</div>';
+      count++;
+    }
+    if (count === 0) {
+      html = '<div class="col-picker-no-results">未找到匹配字段</div>';
+    }
+    listEl.innerHTML = html;
+  }
+
+  renderList('');
+
+  searchInput.addEventListener('input', function() {
+    renderList(this.value);
+  });
+
+  picker.addEventListener('click', function(ev) { ev.stopPropagation(); });
+
+  th.appendChild(picker);
+
+  // Focus search after render
+  setTimeout(function(){ searchInput.focus(); }, 50);
+}
+
+function selectColumn(colIdx, col) {
+  columnConfig[colIdx] = col;
+  closeAllPickers();
+  renderTable();
+}
+
+function closeAllPickers() {
+  document.querySelectorAll('.col-picker').forEach(function(p){ p.remove(); });
+}
+
+// ===== Search =====
+var searchWrap = document.getElementById('search-wrap');
+var searchInput = document.getElementById('search-input');
+var clearBtn = document.getElementById('clear-search');
 
 if (searchInput.value) {
   searchWrap.classList.add('has-value');
@@ -354,7 +630,8 @@ clearBtn.addEventListener('click', function() {
   searchInput.form.submit();
 });
 
-let currentModalId = null;
+// ===== Detail Modal =====
+var currentModalId = null;
 
 async function openDetail(matId) {
   currentModalId = matId;
@@ -363,36 +640,24 @@ async function openDetail(matId) {
   document.body.style.overflow = 'hidden';
 
   try {
-    const resp = await fetch('/materials/' + matId);
+    var resp = await fetch('/materials/' + matId);
     if (!resp.ok) {
       document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">请求失败 (HTTP ' + resp.status + ')，请刷新页面重试</p>';
       return;
     }
-    const text = await resp.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch(e) {
-      document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">返回数据格式错误，可能是登录过期，请刷新页面重新登录</p>';
-      return;
-    }
+    var data = await resp.json();
     if (data.error) {
       document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">' + data.error + '</p>';
       return;
     }
-    // 设置仪表盘链接
     var dashLink = document.getElementById('modal-dashboard-link');
     if (dashLink) {
       dashLink.href = '/materials/' + matId + '/dashboard';
       dashLink.style.display = 'inline-flex';
     }
-    try {
-      renderDetail(data);
-    } catch(renderErr) {
-      document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">渲染失败: ' + renderErr.message + '</p>';
-    }
+    renderDetail(data);
   } catch(e) {
-    document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">加载失败（请检查网络或重新登录）: ' + e.message + '</p>';
+    document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">加载失败: ' + e.message + '</p>';
   }
 }
 
@@ -406,11 +671,13 @@ function fmtTime(t) {
 }
 
 function renderDetail(data) {
-  let html = '';
-  for (const mod of data.fields) {
+  var html = '';
+  for (var mi = 0; mi < data.fields.length; mi++) {
+    var mod = data.fields[mi];
     html += '<div class="card"><div class="detail-section-title">' + mod.icon + ' ' + escapeHtml(mod.name) + '</div>';
     html += '<div class="data-grid">';
-    for (const f of mod.fields) {
+    for (var fi = 0; fi < mod.fields.length; fi++) {
+      var f = mod.fields[fi];
       html += '<div class="data-card">';
       html += '<div class="dc-label">' + escapeHtml(f.label) + '</div>';
       html += '<div class="dc-value' + (f.value ? '' : ' empty') + '">' + (f.value ? escapeHtml(f.value) : '（未填写）') + '</div>';
@@ -418,7 +685,6 @@ function renderDetail(data) {
     }
     html += '</div></div>';
   }
-  // Source info
   html += '<div class="info-box" style="margin-top:8px">';
   html += '来源类型: <strong>' + escapeHtml(data.source_type || 'task') + '</strong> &nbsp;|&nbsp;';
   html += '创建时间: ' + fmtTime(data.created_at) + ' &nbsp;|&nbsp;';
@@ -427,7 +693,6 @@ function renderDetail(data) {
     html += ' &nbsp;|&nbsp; <a href="/task/' + data.source_task_id + '">查看来源任务 →</a>';
   }
   html += '</div>';
-
   document.getElementById('modal-body').innerHTML = html;
 }
 
@@ -437,12 +702,13 @@ function closeDetail() {
   currentModalId = null;
 }
 
-// Keyboard escape
+// ===== Keyboard =====
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeDetail();
+  if (e.key === 'Escape') { closeDetail(); closeAllPickers(); }
 });
+document.addEventListener('click', function() { closeAllPickers(); });
 
-// ===== 筛选自动补全 =====
+// ===== Filter Autocomplete =====
 var filterTimers = {};
 ['product', 'manufacturer', 'supplier'].forEach(function(field) {
   var input = document.getElementById('filter-' + field);
@@ -468,12 +734,14 @@ var filterTimers = {};
     }, 200);
   });
 
-  // Load initial options on focus
   input.addEventListener('focus', function() {
     if (document.getElementById('datalist-' + field).children.length === 0) {
       input.dispatchEvent(new Event('input'));
     }
   });
 });
+
+// ===== Init =====
+initColumns();
 </script>
 {% endblock %}
