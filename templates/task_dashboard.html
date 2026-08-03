@@ -40,69 +40,71 @@
 .stat-tile-value{font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--text-primary);line-height:1.2}
 .stat-tile-detail{font-size:11px;color:var(--text-secondary);margin-top:2px}
 
-/* ===== Two-Column Chart Grid ===== */
-.chart-row{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-  margin-bottom:14px;
-  align-items:start;
-}
+/* ===== Chart Cards ===== */
 .chart-card{
   background:var(--surface-1);
   border:1px solid var(--border);
   border-radius:var(--radius);
   padding:24px;
   box-shadow:0 1px 3px rgba(0,0,0,0.03);
+  display:flex;
+  flex-direction:column;
 }
-.chart-card-header{font-size:15px;font-weight:600;margin-bottom:4px}
-.chart-card-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:18px}
+.chart-card-header{font-size:14px;font-weight:600;margin-bottom:3px;flex-shrink:0}
+.chart-card-subtitle{font-size:11px;color:var(--text-muted);margin-bottom:16px;flex-shrink:0}
+.chart-card-body{flex:1;display:flex;align-items:center}
+
+/* ===== Three-Column Row ===== */
+.triple-row{
+  display:grid;
+  grid-template-columns:1.5fr 1fr 1fr;
+  gap:14px;
+  margin-bottom:14px;
+}
+
+/* ===== Two-Column Row ===== */
+.dual-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-bottom:14px;
+}
 
 /* ===== Bar Chart ===== */
 .bar-row{
-  display:flex;align-items:center;margin-bottom:6px;cursor:pointer;
+  display:flex;align-items:center;margin-bottom:5px;cursor:pointer;
   padding:2px 4px;border-radius:4px;transition:background .15s;
 }
-.bar-row:hover{background:rgba(42,120,214,0.04)}
-.bar-label{width:150px;font-size:12px;color:var(--text-secondary);text-align:right;padding-right:12px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar-track{flex:1;height:24px;position:relative;background:var(--gridline);border-radius:0 4px 4px 0}
+.bar-row:hover{background:rgba(42,120,214,0.05)}
+.bar-label{width:140px;font-size:11px;color:var(--text-secondary);text-align:right;padding-right:10px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:22px;position:relative;background:var(--gridline);border-radius:0 4px 4px 0}
 .bar-fill{height:100%;border-radius:0 4px 4px 0;transition:width .4s ease;position:relative;background:var(--s1)}
-.bar-value{position:absolute;right:-4px;top:50%;transform:translate(100%,-50%);font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;padding-left:6px}
-
-/* Bar chart tooltip */
-.bar-tooltip{
-  display:none;
-  position:fixed;
-  background:rgba(0,0,0,0.82);
-  color:#fff;
-  padding:6px 12px;
-  border-radius:6px;
-  font-size:12px;
-  pointer-events:none;
-  z-index:999;
-  white-space:nowrap;
-  letter-spacing:0.01em;
-}
+.bar-value{position:absolute;right:-4px;top:50%;transform:translate(100%,-50%);font-size:11px;font-weight:600;color:var(--text-primary);white-space:nowrap;padding-left:5px}
 
 /* ===== Donut ===== */
-.donut-wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.donut-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%}
 .donut-svg{flex-shrink:0}
-.donut-legend{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px}
-.donut-legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)}
+.donut-legend{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
+.donut-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary);cursor:pointer;padding:2px 4px;border-radius:4px;transition:background .15s}
+.donut-legend-item:hover{background:rgba(42,120,214,0.05)}
 .donut-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-.donut-legend-value{font-weight:600;color:var(--text-primary);margin-left:auto;padding-left:8px;font-size:11px;white-space:nowrap}
+.donut-legend-value{font-weight:600;color:var(--text-primary);margin-left:auto;padding-left:6px;font-size:11px;white-space:nowrap}
 
 /* ===== Completeness ===== */
-.completeness-wrap{display:flex;align-items:center;gap:16px;padding:4px 0}
+.completeness-wrap{display:flex;align-items:center;gap:14px;padding:4px 0}
 .completeness-ring{flex-shrink:0}
 .completeness-detail{font-size:13px;color:var(--text-secondary)}
 .completeness-detail strong{color:var(--text-primary)}
-.missing-fields{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
-.missing-tag{background:#fef3f2;color:#b42318;border:1px solid #fecdca;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:500}
-.filled-tag{background:#ecfdf3;color:#067647;border:1px solid #abefc6;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:500}
+.missing-fields{margin-top:10px;display:flex;flex-wrap:wrap;gap:5px}
+.missing-tag{background:#fef3f2;color:#b42318;border:1px solid #fecdca;border-radius:5px;padding:2px 7px;font-size:10.5px;font-weight:500}
+.filled-tag{background:#ecfdf3;color:#067647;border:1px solid #abefc6;border-radius:5px;padding:2px 7px;font-size:10.5px;font-weight:500}
 
 /* ===== Supply ===== */
-.supply-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.supply-row{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:8px;
+}
 .supply-card{
   background:var(--gridline);
   border-radius:8px;
@@ -110,39 +112,41 @@
   transition:background .15s;
 }
 .supply-card:hover{background:rgba(42,120,214,0.06)}
-.supply-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px}
+.supply-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px}
 .supply-value{font-size:13px;font-weight:600;color:var(--text-primary)}
+
+/* ===== Floating Tooltip ===== */
+.chart-tooltip{
+  display:none;
+  position:fixed;
+  background:rgba(0,0,0,0.85);
+  color:#fff;
+  padding:6px 12px;
+  border-radius:6px;
+  font-size:12px;
+  pointer-events:none;
+  z-index:9999;
+  white-space:nowrap;
+  letter-spacing:0.01em;
+  box-shadow:0 2px 8px rgba(0,0,0,0.2);
+}
 
 /* ===== Data Table ===== */
 .data-table-wrap{overflow-x:auto;max-height:500px;overflow-y:auto}
-.data-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px;
-}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
 .data-table th{
-  text-align:left;
-  padding:10px 14px;
-  background:var(--gridline);
-  color:var(--text-secondary);
-  font-weight:600;
-  font-size:11px;
-  text-transform:uppercase;
-  letter-spacing:0.04em;
-  white-space:nowrap;
-  position:sticky;top:0;z-index:2;
+  text-align:left;padding:10px 14px;
+  background:var(--gridline);color:var(--text-secondary);
+  font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;
+  white-space:nowrap;position:sticky;top:0;z-index:2;
   border-bottom:2px solid var(--baseline);
 }
 .data-table td{padding:10px 14px;border-bottom:1px solid var(--gridline);color:var(--text-primary);white-space:nowrap}
 .data-table tbody tr:hover td{background:rgba(42,120,214,0.03)}
 .data-table .cat-header td{
-  background:var(--surface-1);
-  color:var(--text-muted);
-  font-size:11px;
-  font-weight:600;
-  letter-spacing:0.05em;
-  border-bottom:1px solid var(--baseline);
-  padding:8px 14px;
+  background:var(--surface-1);color:var(--text-muted);
+  font-size:11px;font-weight:600;letter-spacing:0.05em;
+  border-bottom:1px solid var(--baseline);padding:8px 14px;
 }
 .data-table .empty-cell{color:var(--text-muted);font-style:italic}
 
@@ -159,22 +163,27 @@
 .full-card-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:18px}
 
 /* ===== Responsive ===== */
-@media(max-width:1100px){
-  .chart-row{grid-template-columns:1fr}
+@media(max-width:1200px){
+  .triple-row{grid-template-columns:1fr 1fr}
+  .supply-row{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:900px){
+  .triple-row{grid-template-columns:1fr}
+  .dual-row{grid-template-columns:1fr}
   .kpi-row{grid-template-columns:1fr 1fr 1fr}
   .hero-card{grid-column:1/-1}
+  .supply-row{grid-template-columns:repeat(3,1fr)}
 }
-@media(max-width:768px){
+@media(max-width:600px){
   .kpi-row{grid-template-columns:1fr 1fr}
-  .hero-card{grid-column:1/-1}
+  .supply-row{grid-template-columns:repeat(2,1fr)}
   .hero-value{font-size:40px}
   .donut-wrap{flex-direction:column;align-items:flex-start}
-  .bar-label{width:100px;font-size:11px}
-  .supply-grid{grid-template-columns:1fr 1fr}
+  .bar-label{width:90px;font-size:10px}
 }
-@media(max-width:500px){
+@media(max-width:400px){
   .kpi-row{grid-template-columns:1fr}
-  .supply-grid{grid-template-columns:1fr}
+  .supply-row{grid-template-columns:1fr}
 }
 </style>
 
@@ -252,19 +261,19 @@
     <div class="hero-unit">pcs · 覆盖 12 个产品线/阶段</div>
   </div>
   <div class="stat-tile">
-    <div class="stat-tile-label">📦 标准包装 SPQ</div>
+    <div class="stat-tile-label">📦 SPQ</div>
     <div class="stat-tile-value">{{ task.spq or '-' }}</div>
-    <div class="stat-tile-detail">pcs</div>
+    <div class="stat-tile-detail">标准包装</div>
   </div>
   <div class="stat-tile">
-    <div class="stat-tile-label">📐 最小起订 MOQ</div>
+    <div class="stat-tile-label">📐 MOQ</div>
     <div class="stat-tile-value">{{ task.moq or '-' }}</div>
-    <div class="stat-tile-detail">pcs</div>
+    <div class="stat-tile-detail">最小起订</div>
   </div>
   <div class="stat-tile">
-    <div class="stat-tile-label">🚀 交期 L/T</div>
+    <div class="stat-tile-label">🚀 L/T</div>
     <div class="stat-tile-value">{{ task.lead_time or '-' }}</div>
-    <div class="stat-tile-detail">{{ task.lead_time or '' }}</div>
+    <div class="stat-tile-detail">交期</div>
   </div>
   <div class="stat-tile">
     <div class="stat-tile-label">📈 峰值月产能</div>
@@ -273,54 +282,57 @@
   </div>
 </div>
 
-<!-- Row 1: BOM Bar Chart | Donut Chart -->
-<div class="chart-row">
+<!-- Row 1: BOM Bar Chart (wider) | Donut Chart | Completeness -->
+<div class="triple-row">
+  <!-- BOM Bar Chart -->
   <div class="chart-card">
     <div class="chart-card-header">📊 BOM 用量分布 — 按产品线/阶段</div>
-    <div class="chart-card-subtitle">单位：pcs · 按用量降序排列</div>
-    <div id="bom-bar-chart">
+    <div class="chart-card-subtitle">单位：pcs · 按用量降序</div>
+    <div class="chart-card-body"><div id="bom-bar-chart" style="width:100%">
       {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
       <div class="empty-state"><div class="icon">📊</div><p>暂无 BOM 用量数据</p></div>
       {% endif %}
-    </div>
+    </div></div>
   </div>
 
+  <!-- Donut Chart -->
   <div class="chart-card">
-    <div class="chart-card-header">🍩 用量占比 — Top 6 产品线</div>
-    <div class="chart-card-subtitle">其余产品线合并为"其他"</div>
-    <div class="donut-wrap" id="donut-chart">
+    <div class="chart-card-header">🍩 用量占比</div>
+    <div class="chart-card-subtitle">Top 6 + 其余合并</div>
+    <div class="chart-card-body"><div class="donut-wrap" id="donut-chart">
       {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
       <div class="empty-state" style="padding:20px"><p>暂无数据</p></div>
       {% endif %}
+    </div></div>
+  </div>
+
+  <!-- Completeness -->
+  <div class="chart-card">
+    <div class="chart-card-header">📋 数据完整度</div>
+    <div class="chart-card-subtitle">{{ dashboard_data.filled }}/{{ dashboard_data.total }} 字段已填写</div>
+    <div class="chart-card-body" style="flex-direction:column;align-items:flex-start">
+      <div class="completeness-wrap" id="completeness-ring"></div>
+      <div class="missing-fields" id="missing-fields"></div>
     </div>
   </div>
 </div>
 
-<!-- Row 2: Completeness | Supply Chain -->
-<div class="chart-row">
-  <div class="chart-card">
-    <div class="chart-card-header">📋 数据完整度</div>
-    <div class="chart-card-subtitle">{{ dashboard_data.total }} 个字段中，已填写 {{ dashboard_data.filled }} 个</div>
-    <div class="completeness-wrap" id="completeness-ring"></div>
-    <div class="missing-fields" id="missing-fields"></div>
-  </div>
-
-  <div class="chart-card">
-    <div class="chart-card-header">🚚 供应链信息概览</div>
-    <div class="chart-card-subtitle">制造商、供应商、产地、产能等</div>
-    {% if dashboard_data.supply_data %}
-    <div class="supply-grid">
-      {% for item in dashboard_data.supply_data %}
-      <div class="supply-card">
-        <div class="supply-label">{{ item.label }}</div>
-        <div class="supply-value">{{ item.value }}</div>
-      </div>
-      {% endfor %}
+<!-- Row 2: Supply Chain (full width, 6-column grid) -->
+<div class="full-card">
+  <div class="full-card-header">🚚 供应链信息概览</div>
+  <div class="full-card-subtitle">制造商、供应商、产地、产能等信息</div>
+  {% if dashboard_data.supply_data %}
+  <div class="supply-row">
+    {% for item in dashboard_data.supply_data %}
+    <div class="supply-card">
+      <div class="supply-label">{{ item.label }}</div>
+      <div class="supply-value">{{ item.value }}</div>
     </div>
-    {% else %}
-    <div class="empty-state" style="padding:20px"><p>暂无供应链数据</p></div>
-    {% endif %}
+    {% endfor %}
   </div>
+  {% else %}
+  <div class="empty-state" style="padding:20px"><p>暂无供应链数据</p></div>
+  {% endif %}
 </div>
 
 <!-- Full Data Table -->
@@ -329,13 +341,7 @@
   <div class="full-card-subtitle">全部 {{ dashboard_data.total }} 个字段</div>
   <div class="data-table-wrap">
     <table class="data-table">
-      <thead>
-        <tr>
-          <th>分类</th>
-          <th>字段名称</th>
-          <th>值</th>
-        </tr>
-      </thead>
+      <thead><tr><th>分类</th><th>字段名称</th><th>值</th></tr></thead>
       <tbody>
         {% set ns = namespace(current_cat='') %}
         {% for item in dashboard_data.all_fields %}
@@ -388,19 +394,33 @@
 
 </div>
 
-<!-- Tooltip element for bar chart -->
-<div class="bar-tooltip" id="bar-tooltip"></div>
+<!-- Global tooltip element -->
+<div class="chart-tooltip" id="chart-tooltip"></div>
 
 <script>
-const dashboardData = {{ dashboard_data | tojson | safe }};
-const bomData = dashboardData.bom_data;
+var dashboardData = {{ dashboard_data | tojson | safe }};
+var bomData = dashboardData.bom_data;
+var tooltip = document.getElementById('chart-tooltip');
 
-// ===== Bar Chart (with hover tooltip) =====
+function showTooltip(e, text) {
+  tooltip.textContent = text;
+  tooltip.style.display = 'block';
+  tooltip.style.left = (e.clientX + 14) + 'px';
+  tooltip.style.top = (e.clientY - 30) + 'px';
+}
+function moveTooltip(e) {
+  tooltip.style.left = (e.clientX + 14) + 'px';
+  tooltip.style.top = (e.clientY - 30) + 'px';
+}
+function hideTooltip() {
+  tooltip.style.display = 'none';
+}
+
+// ===== Bar Chart =====
 (function() {
-  const container = document.getElementById('bom-bar-chart');
-  const tooltip = document.getElementById('bar-tooltip');
+  var container = document.getElementById('bom-bar-chart');
   if (!bomData.length || bomData.every(function(d){ return d.value === 0; })) return;
-  const maxVal = Math.max.apply(null, bomData.map(function(d){ return d.value; }));
+  var maxVal = Math.max.apply(null, bomData.map(function(d){ return d.value; }));
 
   bomData.forEach(function(d) {
     var row = document.createElement('div');
@@ -428,18 +448,13 @@ const bomData = dashboardData.bom_data;
     row.appendChild(label);
     row.appendChild(track);
 
-    // Hover tooltip
     row.addEventListener('mouseenter', function(e) {
-      tooltip.textContent = d.label + ': ' + d.value + ' pcs';
-      tooltip.style.display = 'block';
+      showTooltip(e, d.label + ': ' + d.value + ' pcs');
       row.style.background = 'rgba(42,120,214,0.06)';
     });
-    row.addEventListener('mousemove', function(e) {
-      tooltip.style.left = (e.clientX + 14) + 'px';
-      tooltip.style.top = (e.clientY - 32) + 'px';
-    });
+    row.addEventListener('mousemove', moveTooltip);
     row.addEventListener('mouseleave', function() {
-      tooltip.style.display = 'none';
+      hideTooltip();
       row.style.background = '';
     });
 
@@ -447,7 +462,7 @@ const bomData = dashboardData.bom_data;
   });
 })();
 
-// ===== Donut Chart (with SVG <title> tooltips) =====
+// ===== Donut Chart =====
 (function() {
   var container = document.getElementById('donut-chart');
   if (!bomData.length || bomData.every(function(d){ return d.value === 0; })) return;
@@ -464,8 +479,8 @@ const bomData = dashboardData.bom_data;
 
   var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 180 180');
-  svg.setAttribute('width', '160');
-  svg.setAttribute('height', '160');
+  svg.setAttribute('width', '150');
+  svg.setAttribute('height', '150');
   svg.classList.add('donut-svg');
 
   var startAngle = -Math.PI / 2;
@@ -486,41 +501,41 @@ const bomData = dashboardData.bom_data;
     path.setAttribute('stroke', 'var(--surface-1)');
     path.setAttribute('stroke-width', '2');
 
-    // SVG <title> for native browser tooltip
-    var titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-    titleEl.textContent = seg.label + ': ' + seg.value + ' (' + (seg.value / total * 100).toFixed(1) + '%)';
-    path.appendChild(titleEl);
+    var tipText = seg.label + ': ' + seg.value + ' (' + (seg.value / total * 100).toFixed(1) + '%)';
 
-    path.addEventListener('mouseenter', function() { this.style.opacity = '0.85'; });
-    path.addEventListener('mouseleave', function() { this.style.opacity = '1'; });
+    path.addEventListener('mouseenter', function(e) {
+      showTooltip(e, tipText);
+      this.style.opacity = '0.85';
+    });
+    path.addEventListener('mousemove', moveTooltip);
+    path.addEventListener('mouseleave', function() {
+      hideTooltip();
+      this.style.opacity = '1';
+    });
 
     svg.appendChild(path);
     startAngle = endAngle;
   });
 
   // Center text
-  var centerText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  centerText.setAttribute('x', cx);
-  centerText.setAttribute('y', cy - 4);
-  centerText.setAttribute('text-anchor', 'middle');
-  centerText.setAttribute('font-size', '20');
-  centerText.setAttribute('font-weight', '700');
-  centerText.setAttribute('fill', 'var(--text-primary)');
-  centerText.textContent = total;
-  svg.appendChild(centerText);
+  var ct = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  ct.setAttribute('x', cx); ct.setAttribute('y', cy - 4);
+  ct.setAttribute('text-anchor', 'middle');
+  ct.setAttribute('font-size', '20'); ct.setAttribute('font-weight', '700');
+  ct.setAttribute('fill', 'var(--text-primary)');
+  ct.textContent = total;
+  svg.appendChild(ct);
 
-  var centerUnit = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  centerUnit.setAttribute('x', cx);
-  centerUnit.setAttribute('y', cy + 13);
-  centerUnit.setAttribute('text-anchor', 'middle');
-  centerUnit.setAttribute('font-size', '10');
-  centerUnit.setAttribute('fill', 'var(--text-muted)');
-  centerUnit.textContent = 'pcs 总量';
-  svg.appendChild(centerUnit);
+  var cu = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  cu.setAttribute('x', cx); cu.setAttribute('y', cy + 14);
+  cu.setAttribute('text-anchor', 'middle');
+  cu.setAttribute('font-size', '10'); cu.setAttribute('fill', 'var(--text-muted)');
+  cu.textContent = 'pcs 总量';
+  svg.appendChild(cu);
 
   container.appendChild(svg);
 
-  // Legend
+  // Legend (with hover sync)
   var legend = document.createElement('div');
   legend.className = 'donut-legend';
   segments.forEach(function(seg, i) {
@@ -533,7 +548,13 @@ const bomData = dashboardData.bom_data;
     name.textContent = seg.label;
     var val = document.createElement('span');
     val.className = 'donut-legend-value';
+    var tipText2 = seg.label + ': ' + seg.value + ' (' + (seg.value / total * 100).toFixed(1) + '%)';
     val.textContent = seg.value + ' (' + (seg.value / total * 100).toFixed(1) + '%)';
+
+    item.addEventListener('mouseenter', function(e){ showTooltip(e, tipText2); });
+    item.addEventListener('mousemove', moveTooltip);
+    item.addEventListener('mouseleave', hideTooltip);
+
     item.appendChild(swatch);
     item.appendChild(name);
     item.appendChild(val);
@@ -550,19 +571,19 @@ const bomData = dashboardData.bom_data;
   var empty = dashboardData.empty;
   var total = dashboardData.total;
 
-  var radius = 52, cx = 62, cy = 62, circ = 2 * Math.PI * radius;
+  var radius = 50, cx = 60, cy = 60, circ = 2 * Math.PI * radius;
 
   var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 124 124');
-  svg.setAttribute('width', '110');
-  svg.setAttribute('height', '110');
+  svg.setAttribute('viewBox', '0 0 120 120');
+  svg.setAttribute('width', '100');
+  svg.setAttribute('height', '100');
   svg.classList.add('completeness-ring');
 
   var bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', radius);
   bg.setAttribute('fill', 'none');
   bg.setAttribute('stroke', 'var(--gridline)');
-  bg.setAttribute('stroke-width', '12');
+  bg.setAttribute('stroke-width', '11');
   svg.appendChild(bg);
 
   if (pct > 0) {
@@ -570,7 +591,7 @@ const bomData = dashboardData.bom_data;
     fg.setAttribute('cx', cx); fg.setAttribute('cy', cy); fg.setAttribute('r', radius);
     fg.setAttribute('fill', 'none');
     fg.setAttribute('stroke', 'var(--good)');
-    fg.setAttribute('stroke-width', '12');
+    fg.setAttribute('stroke-width', '11');
     fg.setAttribute('stroke-linecap', 'round');
     fg.setAttribute('stroke-dasharray', (circ * pct / 100) + ' ' + (circ * (1 - pct / 100)));
     fg.setAttribute('stroke-dashoffset', circ / 4);
@@ -578,41 +599,41 @@ const bomData = dashboardData.bom_data;
     svg.appendChild(fg);
   }
 
-  var pctText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  pctText.setAttribute('x', cx); pctText.setAttribute('y', cy - 3);
-  pctText.setAttribute('text-anchor', 'middle');
-  pctText.setAttribute('font-size', '22'); pctText.setAttribute('font-weight', '700');
-  pctText.setAttribute('fill', 'var(--text-primary)');
-  pctText.textContent = pct + '%';
-  svg.appendChild(pctText);
+  var pt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  pt.setAttribute('x', cx); pt.setAttribute('y', cy - 3);
+  pt.setAttribute('text-anchor', 'middle');
+  pt.setAttribute('font-size', '20'); pt.setAttribute('font-weight', '700');
+  pt.setAttribute('fill', 'var(--text-primary)');
+  pt.textContent = pct + '%';
+  svg.appendChild(pt);
 
-  var subText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  subText.setAttribute('x', cx); subText.setAttribute('y', cy + 14);
-  subText.setAttribute('text-anchor', 'middle');
-  subText.setAttribute('font-size', '10'); subText.setAttribute('fill', 'var(--text-muted)');
-  subText.textContent = '完整度';
-  svg.appendChild(subText);
+  var st = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  st.setAttribute('x', cx); st.setAttribute('y', cy + 14);
+  st.setAttribute('text-anchor', 'middle');
+  st.setAttribute('font-size', '10'); st.setAttribute('fill', 'var(--text-muted)');
+  st.textContent = '完整度';
+  svg.appendChild(st);
 
   container.appendChild(svg);
 
   var detail = document.createElement('div');
   detail.className = 'completeness-detail';
-  detail.innerHTML = '<strong>' + filled + '</strong> / ' + total + ' 个字段已填写' + (empty > 0 ? '，<strong>' + empty + '</strong> 个空白' : ' ✅');
+  detail.innerHTML = '<strong>' + filled + '</strong> / ' + total + ' 已填' + (empty > 0 ? '，<strong>' + empty + '</strong> 空白' : ' ✅');
   container.appendChild(detail);
 
-  var missingContainer = document.getElementById('missing-fields');
+  var mc = document.getElementById('missing-fields');
   if (empty === 0) {
     var tag = document.createElement('span');
     tag.className = 'filled-tag';
-    tag.textContent = '✅ 全部字段已填写';
-    missingContainer.appendChild(tag);
+    tag.textContent = '✅ 全部已填写';
+    mc.appendChild(tag);
   } else {
     dashboardData.all_fields.forEach(function(f) {
       if (!f.filled) {
         var tag = document.createElement('span');
         tag.className = 'missing-tag';
         tag.textContent = f.field + '（' + f.category + '）';
-        missingContainer.appendChild(tag);
+        mc.appendChild(tag);
       }
     });
   }
