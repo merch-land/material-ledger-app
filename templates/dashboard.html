@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* Clickable stat cards */
+.stat-card{
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  user-select: none;
+}
+.stat-card:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  border-color: var(--s1);
+}
+.stat-card:active{transform:translateY(0)}
+.stat-card.active{
+  border-color: var(--s1);
+  box-shadow: 0 0 0 2px rgba(42,120,214,0.15), 0 4px 16px rgba(0,0,0,0.06);
+}
+.stat-card.active::after{
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--s1);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.stat-card .stat-hint{
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.stat-card:hover .stat-hint{opacity: 1}
+.stat-card.active .stat-hint{opacity: 1; color: var(--s1); font-weight: 600}
+
+/* Filter indicator */
+.filter-bar{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.filter-tag{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(42,120,214,0.08);
+  color: var(--s1);
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.filter-tag .clear-btn{
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.6;
+  padding: 0 2px;
+}
+.filter-tag .clear-btn:hover{opacity: 1}
+.filter-count{font-size: 12px; color: var(--text-muted)}
+</style>
+
+<!-- Stats Row -->
+<div class="stats-row" id="stat-filters">
+  <div class="stat-card active" data-filter="all">
+    <div class="stat-num" style="color:var(--s1)">{{ total_tasks }}</div>
+    <div class="stat-label">全部任务</div>
+    <div class="stat-hint">点击查看全部</div>
+  </div>
+  <div class="stat-card" data-filter="mine">
+    <div class="stat-num" style="color:var(--s1)">{{ my_created }}</div>
+    <div class="stat-label">{{ '我创建的' if user.role == 'leader' else '我的任务' }}</div>
+    <div class="stat-hint">点击筛选</div>
+  </div>
+  <div class="stat-card" data-filter="pending">
+    <div class="stat-num" style="color:var(--s4)">{{ pending }}</div>
+    <div class="stat-label">待处理</div>
+    <div class="stat-hint">点击筛选</div>
+  </div>
+  <div class="stat-card" data-filter="submitted">
+    <div class="stat-num" style="color:var(--s2)">{{ submitted }}</div>
+    <div class="stat-label">已提交</div>
+    <div class="stat-hint">点击筛选</div>
+  </div>
+  <div class="stat-card" data-filter="completed">
+    <div class="stat-num" style="color:var(--good)">{{ completed }}</div>
+    <div class="stat-label">已完成</div>
+    <div class="stat-hint">点击筛选</div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="card">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div class="filter-bar">
+      <span style="font-size:16px;font-weight:600">📋 任务列表</span>
+      <span id="filter-tag-container"></span>
+      <span class="filter-count" id="filter-count"></span>
+    </div>
+    <div class="btn-group">
+      {% if user.role == 'leader' %}
+      <a href="{{ url_for('create_task') }}" class="btn btn-primary">+ 创建新任务</a>
+      {% endif %}
+      <a href="{{ url_for('export_tasks') }}" class="btn btn-outline btn-sm" title="下载到浏览器默认下载文件夹（通常是 Downloads）">📥 导出Excel</a>
+    </div>
+  </div>
+</div>
+
+<!-- Task Table -->
+<div class="card" style="padding:0;overflow:hidden">
+  <div class="table-wrap">
+    <table id="task-table">
+      <thead>
+        <tr>
+          <th>编号</th>
+          <th>任务标题</th>
+          {% if user.role == 'leader' %}<th>负责人</th>{% endif %}
+          <th>物料编码</th>
+          <th>物料名称</th>
+          <th>物料型号</th>
+          <th>状态</th>
+          <th>截止日期</th>
+          <th>更新时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if tasks %}
+        {% for t in tasks %}
+        <tr data-status="{{ t.status }}"
+            {% if user.role == 'leader' %}data-mine="{{ 'true' if t.created_by == user.id else 'false' }}"{% endif %}>
+          <td style="color:var(--text-muted);font-size:12px">#{{ t.id }}</td>
+          <td><strong>{{ t.title }}</strong></td>
+          {% if user.role == 'leader' %}
+          <td>{{ t.assignee_name or '-' }}</td>
+          {% endif %}
+          <td>{{ t.material_code or '-' }}</td>
+          <td>{{ t.material_name or '-' }}</td>
+          <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">{{ t.material_model or '-' }}</td>
+          <td>
+            <span class="status-badge" style="background:{{ STATUS_MAP[t.status].bg }};color:{{ STATUS_MAP[t.status].color }}">
+              {{ STATUS_MAP[t.status].label }}
+            </span>
+          </td>
+          <td class="{{ 'due-warn' if t.due_date and t.due_date < current_date and t.status != 'completed' else '' }}">
+            {{ t.due_date or '-' }}
+          </td>
+          <td style="color:var(--text-muted);font-size:12px">{{ t.updated_at[:10] if t.updated_at else '-' }}</td>
+          <td>
+            <div class="btn-group">
+              <a href="{{ url_for('view_task', task_id=t.id) }}" class="btn btn-outline btn-sm">查看</a>
+              {% if user.role == 'member' and t.assigned_to == user.id and t.status in ('assigned','in_progress') %}
+              <a href="{{ url_for('fill_task', task_id=t.id) }}" class="btn btn-primary btn-sm">✏️ 填写</a>
+              {% endif %}
+              {% if user.role == 'leader' and t.status == 'submitted' %}
+              <form method="POST" action="{{ url_for('complete_task', task_id=t.id) }}" style="display:inline" onsubmit="return confirm('确认审批通过？')">
+                <button class="btn btn-success btn-sm">✓ 通过</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr id="empty-row">
+          <td colspan="10">
+            <div class="empty-state">
+              <div class="icon">📭</div>
+              <p>暂无任务</p>
+              {% if user.role == 'leader' %}
+              <a href="{{ url_for('create_task') }}" class="btn btn-primary" style="margin-top:12px">创建第一个任务</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Filtered empty state (hidden by default) -->
+  <div id="filter-empty" class="empty-state" style="display:none">
+    <div class="icon">🔍</div>
+    <p>当前筛选条件下无匹配任务</p>
+    <a href="#" class="btn btn-outline btn-sm" style="margin-top:8px" onclick="resetFilter();return false">清除筛选</a>
+  </div>
+</div>
+
+<script>
+const FILTER_LABELS = {
+  'all':       '全部任务',
+  'mine':       '{{ "我创建的" if user.role == "leader" else "我的任务" }}',
+  'pending':    '待处理',
+  'submitted':  '已提交',
+  'completed':  '已完成',
+};
+
+let currentFilter = 'all';
+
+function applyFilter(filter) {
+  currentFilter = filter;
+
+  // Update stats active state
+  document.querySelectorAll('#stat-filters .stat-card').forEach(function(card) {
+    card.classList.toggle('active', card.dataset.filter === filter);
+  });
+
+  var rows = document.querySelectorAll('#task-table tbody tr[data-status]');
+  var emptyRow = document.getElementById('empty-row');
+  var filterEmpty = document.getElementById('filter-empty');
+  var tableWrap = document.querySelector('.table-wrap');
+  var visibleCount = 0;
+
+  rows.forEach(function(row) {
+    var show = false;
+    var status = row.dataset.status;
+
+    switch (filter) {
+      case 'all':
+        show = true;
+        break;
+      case 'mine':
+        {% if user.role == 'leader' %}
+        show = row.dataset.mine === 'true';
+        {% else %}
+        show = true;  // Members already see only their tasks
+        {% endif %}
+        break;
+      case 'pending':
+        show = (status === 'assigned' || status === 'in_progress');
+        break;
+      case 'submitted':
+        show = (status === 'submitted');
+        break;
+      case 'completed':
+        show = (status === 'completed');
+        break;
+    }
+
+    row.style.display = show ? '' : 'none';
+    if (show) visibleCount++;
+  });
+
+  // Show/hide empty state
+  if (rows.length === 0) {
+    // No tasks at all — keep original empty state
+    tableWrap.style.display = '';
+    filterEmpty.style.display = 'none';
+  } else if (visibleCount === 0) {
+    tableWrap.style.display = 'none';
+    filterEmpty.style.display = '';
+  } else {
+    tableWrap.style.display = '';
+    filterEmpty.style.display = 'none';
+  }
+
+  // Filter tag
+  var tagContainer = document.getElementById('filter-tag-container');
+  var countEl = document.getElementById('filter-count');
+  if (filter === 'all') {
+    tagContainer.innerHTML = '';
+    countEl.textContent = rows.length > 0 ? '共 ' + rows.length + ' 个任务' : '';
+  } else {
+    tagContainer.innerHTML = '<span class="filter-tag">' + FILTER_LABELS[filter] +
+      ' <span class="clear-btn" onclick="resetFilter()" title="清除筛选">✕</span></span>';
+    countEl.textContent = visibleCount + ' 个任务';
+  }
+}
+
+function resetFilter() {
+  applyFilter('all');
+}
+
+// Click handlers on stat cards
+document.querySelectorAll('#stat-filters .stat-card').forEach(function(card) {
+  card.addEventListener('click', function() {
+    applyFilter(this.dataset.filter);
+  });
+});
+
+// Init
+applyFilter('all');
+</script>
+{% endblock %}

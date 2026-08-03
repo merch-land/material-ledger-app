@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:1000px;margin:0 auto">
+
+<!-- Header -->
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <span style="font-size:13px;color:var(--text-muted)">任务 #{{ task.id }}</span>
+      <h2 style="font-size:20px;margin-top:4px">{{ task.title }}</h2>
+      {% if task.due_date %}<span style="font-size:12px;color:var(--text-muted)">📅 截止：{{ task.due_date }}</span>{% endif %}
+    </div>
+    <div>
+      {% if is_preview %}
+      <span class="status-badge" style="background:rgba(42,120,214,0.1);color:var(--s1);font-size:13px">👁 预览模式</span>
+      {% else %}
+      <button type="button" class="btn btn-outline btn-sm" onclick="saveDraft()">💾 保存草稿</button>
+      {% endif %}
+    </div>
+  </div>
+  {% if is_preview %}
+  <div class="info-box" style="margin-top:12px;background:rgba(42,120,214,0.06);color:var(--s1);border:1px solid rgba(42,120,214,0.15)">
+    👁 <strong>预览模式</strong> — 这是 <strong>{{ task.assignee_name }}</strong> 将看到的填写表单。所有字段为只读，不会保存修改。
+  </div>
+  {% endif %}
+</div>
+
+<!-- 料件信息（只读参考） -->
+{% for mod in leader_modules %}
+<div class="card">
+  <div class="detail-section-title">
+    🔒 {{ mod.name }}
+    <span style="font-size:11px;font-weight:400;color:var(--text-muted)">— Leader 已填写，仅供参考</span>
+  </div>
+  {% if not is_preview and user.role == 'member' %}
+  <div class="info-box" style="background:rgba(42,120,214,0.04);color:var(--s1);border:1px solid rgba(42,120,214,0.1);margin-bottom:12px">
+    🔒 此模块由 Leader 在创建任务时填写。如需修改，请联系 Leader 编辑任务。
+  </div>
+  {% endif %}
+  {% for f in mod.fields %}
+  <div class="detail-row">
+    <div class="detail-label">{{ f.label }}</div>
+    <div class="detail-value {{ 'empty-cell' if not task[f.col] else '' }}">
+      {{ task[f.col] if task[f.col] else '（未填写）' }}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+<form id="fill-form" method="POST">
+<input type="hidden" name="action" value="save">
+
+<!-- Tabs for Member Modules -->
+<div class="card" style="position:sticky;top:60px;z-index:10;padding:14px 18px">
+  <div class="tabs" id="module-tabs">
+    {% for mod in member_modules %}
+    <button type="button" class="tab-btn {% if loop.first %}active{% endif %}" data-tab="{{ mod.key }}" tabindex="-1">
+      {{ mod.icon }} {{ mod.name }}
+    </button>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Member Module Content -->
+{% for mod in member_modules %}
+<div class="card tab-content {% if loop.first %}active{% endif %}" id="tab-{{ mod.key }}">
+  <div class="card-header">{{ mod.icon }} {{ mod.name }}</div>
+
+  {% if mod.key == 'bom_usage' %}
+  {% if not is_preview %}
+  <div class="info-box">💡 前 12 项数量输入后，<strong>总计</strong> 自动计算</div>
+  {% endif %}
+  <div class="fields-grid">
+    {% for f in mod.fields %}
+    <div class="form-group">
+      <label class="form-label">
+        {{ f.label }}
+        {% if f.col == 'bom_total' %}<span style="font-size:11px;color:var(--s1)">（自动计算）</span>{% endif %}
+      </label>
+      <input type="{{ 'text' if f.col == 'bom_total' else 'number' }}"
+             name="{{ f.col }}" class="form-input {% if f.col == 'bom_total' %}form-input-total{% endif %}"
+             value="{{ task[f.col] }}"
+             placeholder="0" step="any"
+             {% if f.col == 'bom_total' or is_preview %}readonly{% endif %}
+             {% if f.col == 'bom_total' %}style="font-weight:700;font-size:16px"{% endif %}
+             {% if is_preview %}style="background:var(--gridline);cursor:default"{% endif %}
+             data-bom="{{ 'input' if f.col != 'bom_total' else 'total' }}">
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="fields-grid">
+    {% for f in mod.fields %}
+    {% if mod.key == 'commercial' %}
+      {% if f.col == 'unit_price_untaxed' %}<div class="field-group-header">💰 价格信息</div>{% endif %}
+      {% if f.col == 'spq' %}<div class="field-group-header">📦 包装与交期</div>{% endif %}
+      {% if f.col == 'production_time' %}<div class="field-group-header">🏭 产能产量</div>{% endif %}
+      {% if f.col == 'wafer_origin' %}<div class="field-group-header">🌍 产地信息</div>{% endif %}
+      {% if f.col == 'peak_monthly_capacity' %}<div class="field-group-header">📊 产能峰值</div>{% endif %}
+      {% if f.col == 'automotive_applications' %}<div class="field-group-header">📝 应用与备注</div>{% endif %}
+    {% endif %}
+    <div class="form-group{% if f.type == 'textarea' %} span-full{% endif %}">
+      <label class="form-label">
+        {{ f.label }}
+        {% if f.required %}<span class="required">*</span>{% endif %}
+      </label>
+      {% if f.type == 'select' %}
+      <select name="{{ f.col }}" class="form-select" {% if is_preview %}disabled style="background:var(--gridline);cursor:default"{% endif %}>
+        <option value="">-- 请选择 --</option>
+        {% for opt in f.options %}
+        <option value="{{ opt }}" {% if task[f.col] == opt %}selected{% endif %}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+      {% elif f.type == 'textarea' %}
+      <textarea name="{{ f.col }}" class="form-textarea" rows="2" placeholder="{{ '输入 ' + f.label if not is_preview else '' }}"
+                {% if is_preview %}readonly style="background:var(--gridline);cursor:default"{% endif %}>{{ task[f.col] }}</textarea>
+      {% else %}
+      <input type="text" name="{{ f.col }}" class="form-input" value="{{ task[f.col] }}"
+             placeholder="{{ '输入 ' + f.label if not is_preview else '' }}"
+             {% if is_preview %}readonly style="background:var(--gridline);cursor:default"{% endif %}>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+
+<!-- Actions -->
+{% if not is_preview %}
+<div class="card">
+  <div class="btn-group" style="justify-content:space-between">
+    <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-outline">← 返回详情</a>
+    <div class="btn-group">
+      <button type="button" class="btn btn-outline" onclick="saveDraft()">💾 保存草稿</button>
+      <button type="submit" class="btn btn-success" onclick="setSubmit()">📤 提交任务</button>
+    </div>
+  </div>
+  <div style="margin-top:10px;font-size:12px;color:var(--text-muted)">
+    ⚠️ 提交后 Leader 会收到通知，提交后如需修改需 Leader 退回。
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div style="text-align:center;color:var(--text-muted);font-size:14px">
+    👁 预览模式 — 仅查看表单结构，不保存修改
+    &nbsp;&nbsp;<a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-outline btn-sm">← 返回任务详情</a>
+  </div>
+</div>
+{% endif %}
+</form>
+</div>
+
+<script>
+{% if not is_preview %}
+// Tab switching
+document.querySelectorAll('#module-tabs .tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#module-tabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    this.classList.add('active');
+    document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+  });
+});
+
+// BOM auto-calc
+var bomInputs = document.querySelectorAll('[data-bom="input"]');
+var totalInput = document.querySelector('[data-bom="total"]');
+function calcTotal() {
+  var sum = 0;
+  bomInputs.forEach(function(inp) { sum += parseFloat(inp.value) || 0; });
+  if (totalInput) totalInput.value = sum === Math.floor(sum) ? sum : sum.toFixed(2);
+}
+bomInputs.forEach(function(inp) { inp.addEventListener('input', calcTotal); });
+
+function saveDraft() {
+  document.querySelector('input[name="action"]').value = 'save';
+  document.getElementById('fill-form').submit();
+}
+function setSubmit() {
+  document.querySelector('input[name="action"]').value = 'submit';
+}
+{% else %}
+// Preview mode: tabs still work
+document.querySelectorAll('#module-tabs .tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#module-tabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    this.classList.add('active');
+    document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+  });
+});
+{% endif %}
+
+// Warn before leaving unsaved form
+var formTouched = false;
+document.querySelectorAll('input, select, textarea').forEach(function(el){
+  el.addEventListener('change', function(){ formTouched = true; });
+  el.addEventListener('input', function(){ formTouched = true; });
+});
+window.addEventListener('beforeunload', function(e){
+  if (formTouched) { e.preventDefault(); e.returnValue = '您有未保存的数据，确定要离开吗？'; }
+});
+// Clear warning on submit
+document.querySelector('form').addEventListener('submit', function(){ formTouched = false; });
+</script>
+{% endblock %}

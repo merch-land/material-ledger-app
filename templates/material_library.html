@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* Search Bar */
+.search-bar{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.search-input-wrap{
+  flex: 1;
+  min-width: 280px;
+  position: relative;
+}
+.search-input-wrap input{
+  width: 100%;
+  padding: 10px 40px 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  transition: all 0.15s;
+}
+.search-input-wrap input:focus{
+  outline: none;
+  border-color: var(--s1);
+  box-shadow: 0 0 0 3px rgba(42,120,214,0.1);
+}
+.search-input-wrap .search-icon{
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.search-input-wrap .clear-search{
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  display: none;
+  background: none;
+  border: none;
+}
+.search-input-wrap .clear-search:hover{color: var(--critical)}
+.search-input-wrap.has-value .clear-search{display:block}
+.search-input-wrap.has-value .search-icon{display:none}
+
+.filter-select{
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  min-width: 140px;
+  max-width: 200px;
+}
+.filter-select:focus{outline: none; border-color: var(--s1); box-shadow: 0 0 0 3px rgba(42,120,214,0.1);}
+
+/* Stats bar */
+.stats-bar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.stats-bar strong{color: var(--text-primary); font-size: 16px}
+
+/* Source badge */
+.source-badge{
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.source-task{background: rgba(42,120,214,0.08); color: #1a56c7}
+.source-import{background: rgba(237,161,0,0.08); color: #b87d00}
+.source-manual{background: rgba(11,175,122,0.08); color: #0e8a5f}
+
+/* Pagination */
+.pagination{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.page-btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.page-btn:hover{background: var(--gridline); text-decoration: none; color: var(--text-primary)}
+.page-btn.active{background: var(--s1); color: #fff; border-color: var(--s1); font-weight: 600}
+.page-btn.disabled{opacity: 0.4; pointer-events: none; cursor: default}
+.page-info{font-size: 12px; color: var(--text-muted); padding: 0 8px}
+
+/* Modal */
+.modal-overlay{
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background: var(--surface-1);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  max-width: 900px;
+  width: 95vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.modal-header{
+  position: sticky; top: 0; z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--gridline);
+  background: var(--surface-1);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.modal-header h3{font-size: 17px; margin: 0}
+.modal-close{
+  width: 32px; height: 32px;
+  border: none; background: var(--gridline);
+  border-radius: 8px; font-size: 16px;
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  color: var(--text-muted);
+}
+.modal-close:hover{background: var(--baseline); color: var(--text-primary)}
+.modal-body{padding: 20px 24px}
+.modal-footer{
+  position: sticky; bottom: 0;
+  padding: 14px 24px;
+  border-top: 1px solid var(--gridline);
+  background: var(--surface-1);
+  border-radius: 0 0 var(--radius) var(--radius);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* Responsive */
+@media(max-width:768px){
+  .search-bar{flex-direction: column}
+  .search-input-wrap{min-width: 100%}
+  .filter-select{min-width: 100%}
+}
+</style>
+
+<!-- Search & Filter -->
+<div class="card">
+  <form method="GET" action="{{ url_for('material_library') }}" class="search-bar">
+    <div class="search-input-wrap" id="search-wrap">
+      <input type="text" name="q" id="search-input" value="{{ search }}" placeholder="搜索物料编码、名称、型号、品牌、供应商...">
+      <span class="search-icon">🔍</span>
+      <button type="button" class="clear-search" id="clear-search" title="清除">✕</button>
+    </div>
+    <input type="text" class="filter-select" name="product" id="filter-product"
+      placeholder="📦 产品筛选..." value="{{ product }}" list="datalist-product"
+      onchange="this.form.submit()" autocomplete="off">
+    <datalist id="datalist-product"></datalist>
+
+    <input type="text" class="filter-select" name="manufacturer" id="filter-manufacturer"
+      placeholder="🏭 品牌筛选..." value="{{ manufacturer }}" list="datalist-manufacturer"
+      onchange="this.form.submit()" autocomplete="off">
+    <datalist id="datalist-manufacturer"></datalist>
+
+    <input type="text" class="filter-select" name="supplier" id="filter-supplier"
+      placeholder="🚚 供应商筛选..." value="{{ supplier }}" list="datalist-supplier"
+      onchange="this.form.submit()" autocomplete="off">
+    <datalist id="datalist-supplier"></datalist>
+    <button type="submit" class="btn btn-primary btn-sm">搜索</button>
+    {% if search or product or manufacturer or supplier %}
+    <a href="{{ url_for('material_library') }}" class="btn btn-outline btn-sm">清除</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Stats + Actions -->
+<div class="stats-bar">
+  <span>共 <strong>{{ total }}</strong> 条物料记录</span>
+  <div class="btn-group">
+    <a href="{{ url_for('export_materials') }}" class="btn btn-outline btn-sm">📥 导出全部</a>
+    <a href="{{ url_for('import_page') }}" class="btn btn-primary btn-sm">📤 导入Excel</a>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card" style="padding:0;overflow:hidden">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>物料编码</th>
+          <th>物料名称</th>
+          <th>物料型号</th>
+          <th>品牌/制造商</th>
+          <th>供应商</th>
+          <th>币别</th>
+          <th>单价未税</th>
+          <th>来源</th>
+          <th>更新时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if materials %}
+        {% for m in materials %}
+        <tr>
+          <td><strong>{{ m.material_code or '-' }}</strong></td>
+          <td>{{ m.material_name or '-' }}</td>
+          <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis">{{ m.material_model or '-' }}</td>
+          <td>{{ m.manufacturer or '-' }}</td>
+          <td>{{ m.supplier or '-' }}</td>
+          <td>{{ m.currency or '-' }}</td>
+          <td>{{ m.unit_price_untaxed or '-' }}</td>
+          <td>
+            <span class="source-badge source-{{ m.source_type or 'task' }}">
+              {{ SOURCE_LABELS.get(m.source_type or 'task', m.source_type) }}
+            </span>
+          </td>
+          <td style="color:var(--text-muted);font-size:12px">{{ m.updated_at[:16] if m.updated_at else '-' }}</td>
+          <td>
+            <div class="btn-group">
+              <button class="btn btn-outline btn-sm" onclick="openDetail({{ m.id }})">详情</button>
+              {% if m.source_task_id %}
+              <a href="{{ url_for('task_dashboard', task_id=m.source_task_id) }}" class="btn btn-outline btn-sm" title="分析仪表盘">📊</a>
+              {% else %}
+              <a href="{{ url_for('material_dashboard', mat_id=m.id) }}" class="btn btn-outline btn-sm" title="分析仪表盘">📊</a>
+              {% endif %}
+              {% if user.role == 'leader' %}
+              <form method="POST" action="{{ url_for('material_delete', mat_id=m.id) }}" style="display:inline" onsubmit="return confirm('确认删除该物料记录？')">
+                <button class="btn btn-danger btn-sm">🗑</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="10">
+            <div class="empty-state">
+              <div class="icon">📭</div>
+              <p>{% if search %}未找到匹配的物料{% else %}物料库为空{% endif %}</p>
+              {% if not search %}
+              <p style="font-size:12px;margin-top:4px">完成任务审批后，数据将自动同步到物料库；<br>也可以手动导入 Excel 文件。</p>
+              <a href="{{ url_for('import_page') }}" class="btn btn-primary btn-sm" style="margin-top:12px">📤 导入Excel数据</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if total_pages > 1 %}
+  <div class="pagination" style="padding:16px">
+    <a href="?page=1{% if search %}&q={{ search }}{% endif %}{% if product %}&product={{ product }}{% endif %}{% if manufacturer %}&manufacturer={{ manufacturer }}{% endif %}{% if supplier %}&supplier={{ supplier }}{% endif %}" class="page-btn {{ 'disabled' if page == 1 else '' }}">«</a>
+    <a href="?page={{ page - 1 }}{% if search %}&q={{ search }}{% endif %}{% if product %}&product={{ product }}{% endif %}{% if manufacturer %}&manufacturer={{ manufacturer }}{% endif %}{% if supplier %}&supplier={{ supplier }}{% endif %}" class="page-btn {{ 'disabled' if page == 1 else '' }}">‹</a>
+
+    {% set start_page = [1, page - 2] | max %}
+    {% set end_page = [total_pages, page + 2] | min %}
+    {% for p in range(start_page, end_page + 1) %}
+      {% if p == page %}
+      <span class="page-btn active">{{ p }}</span>
+      {% else %}
+      <a href="?page={{ p }}{% if search %}&q={{ search }}{% endif %}{% if product %}&product={{ product }}{% endif %}{% if manufacturer %}&manufacturer={{ manufacturer }}{% endif %}{% if supplier %}&supplier={{ supplier }}{% endif %}" class="page-btn">{{ p }}</a>
+      {% endif %}
+    {% endfor %}
+
+    <span class="page-info">{{ page }} / {{ total_pages }}</span>
+
+    <a href="?page={{ page + 1 }}{% if search %}&q={{ search }}{% endif %}{% if product %}&product={{ product }}{% endif %}{% if manufacturer %}&manufacturer={{ manufacturer }}{% endif %}{% if supplier %}&supplier={{ supplier }}{% endif %}" class="page-btn {{ 'disabled' if page == total_pages else '' }}">›</a>
+    <a href="?page={{ total_pages }}{% if search %}&q={{ search }}{% endif %}{% if product %}&product={{ product }}{% endif %}{% if manufacturer %}&manufacturer={{ manufacturer }}{% endif %}{% if supplier %}&supplier={{ supplier }}{% endif %}" class="page-btn {{ 'disabled' if page == total_pages else '' }}">»</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Detail Modal -->
+<div id="detail-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeDetail()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">📋 物料详情</h3>
+      <button class="modal-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body">
+      <div style="text-align:center;padding:40px;color:var(--text-muted)">加载中...</div>
+    </div>
+    <div class="modal-footer">
+      <a class="btn btn-primary btn-sm" id="modal-dashboard-link" href="#" style="display:none">📊 分析仪表盘</a>
+      <button class="btn btn-outline btn-sm" onclick="closeDetail()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const searchWrap = document.getElementById('search-wrap');
+const searchInput = document.getElementById('search-input');
+const clearBtn = document.getElementById('clear-search');
+
+if (searchInput.value) {
+  searchWrap.classList.add('has-value');
+}
+searchInput.addEventListener('input', function() {
+  searchWrap.classList.toggle('has-value', this.value.length > 0);
+});
+clearBtn.addEventListener('click', function() {
+  searchInput.value = '';
+  searchWrap.classList.remove('has-value');
+  searchInput.form.submit();
+});
+
+let currentModalId = null;
+
+async function openDetail(matId) {
+  currentModalId = matId;
+  document.getElementById('detail-modal').style.display = 'flex';
+  document.getElementById('modal-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">加载中...</div>';
+  document.body.style.overflow = 'hidden';
+
+  try {
+    const resp = await fetch('/materials/' + matId);
+    if (!resp.ok) {
+      document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">请求失败 (HTTP ' + resp.status + ')，请刷新页面重试</p>';
+      return;
+    }
+    const text = await resp.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(e) {
+      document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">返回数据格式错误，可能是登录过期，请刷新页面重新登录</p>';
+      return;
+    }
+    if (data.error) {
+      document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">' + data.error + '</p>';
+      return;
+    }
+    // 设置仪表盘链接
+    var dashLink = document.getElementById('modal-dashboard-link');
+    if (dashLink) {
+      dashLink.href = '/materials/' + matId + '/dashboard';
+      dashLink.style.display = 'inline-flex';
+    }
+    try {
+      renderDetail(data);
+    } catch(renderErr) {
+      document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">渲染失败: ' + renderErr.message + '</p>';
+    }
+  } catch(e) {
+    document.getElementById('modal-body').innerHTML = '<p style="color:var(--critical)">加载失败（请检查网络或重新登录）: ' + e.message + '</p>';
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtTime(t) {
+  if (!t) return '-';
+  return String(t).substring(0, 16);
+}
+
+function renderDetail(data) {
+  let html = '';
+  for (const mod of data.fields) {
+    html += '<div class="card"><div class="detail-section-title">' + mod.icon + ' ' + escapeHtml(mod.name) + '</div>';
+    html += '<div class="data-grid">';
+    for (const f of mod.fields) {
+      html += '<div class="data-card">';
+      html += '<div class="dc-label">' + escapeHtml(f.label) + '</div>';
+      html += '<div class="dc-value' + (f.value ? '' : ' empty') + '">' + (f.value ? escapeHtml(f.value) : '（未填写）') + '</div>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+  // Source info
+  html += '<div class="info-box" style="margin-top:8px">';
+  html += '来源类型: <strong>' + escapeHtml(data.source_type || 'task') + '</strong> &nbsp;|&nbsp;';
+  html += '创建时间: ' + fmtTime(data.created_at) + ' &nbsp;|&nbsp;';
+  html += '更新时间: ' + fmtTime(data.updated_at);
+  if (data.source_task_id) {
+    html += ' &nbsp;|&nbsp; <a href="/task/' + data.source_task_id + '">查看来源任务 →</a>';
+  }
+  html += '</div>';
+
+  document.getElementById('modal-body').innerHTML = html;
+}
+
+function closeDetail() {
+  document.getElementById('detail-modal').style.display = 'none';
+  document.body.style.overflow = '';
+  currentModalId = null;
+}
+
+// Keyboard escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeDetail();
+});
+
+// ===== 筛选自动补全 =====
+var filterTimers = {};
+['product', 'manufacturer', 'supplier'].forEach(function(field) {
+  var input = document.getElementById('filter-' + field);
+  if (!input) return;
+
+  input.addEventListener('input', function() {
+    clearTimeout(filterTimers[field]);
+    filterTimers[field] = setTimeout(function() {
+      var q = input.value;
+      fetch('/api/filter-options?field=' + field + '&q=' + encodeURIComponent(q))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var datalist = document.getElementById('datalist-' + field);
+          if (!datalist) return;
+          datalist.innerHTML = '';
+          data.options.forEach(function(opt) {
+            var option = document.createElement('option');
+            option.value = opt;
+            datalist.appendChild(option);
+          });
+        })
+        .catch(function() {});
+    }, 200);
+  });
+
+  // Load initial options on focus
+  input.addEventListener('focus', function() {
+    if (document.getElementById('datalist-' + field).children.length === 0) {
+      input.dispatchEvent(new Event('input'));
+    }
+  });
+});
+</script>
+{% endblock %}

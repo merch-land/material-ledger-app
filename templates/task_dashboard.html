@@ -1,0 +1,564 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Dashboard-specific CSS -->
+<style>
+/* Override page background for dashboard */
+.page{background:var(--page-plane)}
+
+/* Hero & KPI */
+.kpi-row{
+  display:grid;
+  grid-template-columns:1fr repeat(4,1fr);
+  gap:14px;
+  margin-bottom:22px;
+}
+.hero-card{
+  background:var(--surface-1);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:26px 28px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  box-shadow:0 1px 3px rgba(0,0,0,0.03);
+}
+.hero-label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;font-weight:500}
+.hero-value{font-size:52px;font-weight:700;line-height:1.1;letter-spacing:-0.03em;color:var(--text-primary)}
+.hero-unit{font-size:13px;color:var(--text-secondary);margin-top:4px}
+.stat-tile{
+  background:var(--surface-1);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px 22px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  box-shadow:0 1px 3px rgba(0,0,0,0.03);
+}
+.stat-tile-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;font-weight:500}
+.stat-tile-value{font-size:26px;font-weight:700;letter-spacing:-0.02em;color:var(--text-primary)}
+.stat-tile-detail{font-size:11px;color:var(--text-secondary);margin-top:2px}
+
+/* Chart Grid */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.chart-card{
+  background:var(--surface-1);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:24px;
+  box-shadow:0 1px 3px rgba(0,0,0,0.03);
+}
+.chart-card.full-width{grid-column:1/-1}
+.chart-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.chart-subtitle{font-size:12px;color:var(--text-muted);margin-bottom:18px}
+
+/* Bar Chart */
+.bar-row{display:flex;align-items:center;margin-bottom:6px;cursor:default}
+.bar-label{width:180px;font-size:12px;color:var(--text-secondary);text-align:right;padding-right:12px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:24px;position:relative;background:var(--gridline);border-radius:0 4px 4px 0}
+.bar-fill{height:100%;border-radius:0 4px 4px 0;transition:width .4s ease;position:relative;background:var(--s1)}
+.bar-value{position:absolute;right:-4px;top:50%;transform:translate(100%,-50%);font-size:12px;font-weight:600;color:var(--text-primary);white-space:nowrap;padding-left:6px}
+.bar-row:hover .bar-fill{filter:brightness(1.08)}
+
+/* Donut */
+.donut-wrap{display:flex;align-items:center;gap:24px}
+.donut-svg{flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:6px}
+.donut-legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)}
+.donut-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.donut-legend-value{font-weight:600;color:var(--text-primary);margin-left:auto;padding-left:12px}
+
+/* Completeness */
+.completeness-wrap{display:flex;align-items:center;gap:18px;padding:8px 0}
+.completeness-ring{flex-shrink:0}
+.completeness-detail{font-size:13px;color:var(--text-secondary)}
+.completeness-detail strong{color:var(--text-primary)}
+.missing-fields{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+.missing-tag{background:#fef3f2;color:#b42318;border:1px solid #fecdca;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:500}
+.filled-tag{background:#ecfdf3;color:#067647;border:1px solid #abefc6;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:500}
+
+/* Supply */
+.supply-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.supply-card{
+  background:var(--gridline);
+  border-radius:8px;
+  padding:14px 16px;
+}
+.supply-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+.supply-value{font-size:14px;font-weight:600;color:var(--text-primary)}
+
+/* Data Table */
+.data-table-wrap{overflow-x:auto}
+.data-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+.data-table th{
+  text-align:left;
+  padding:10px 14px;
+  background:var(--gridline);
+  color:var(--text-secondary);
+  font-weight:600;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.04em;
+  white-space:nowrap;
+  border-bottom:2px solid var(--baseline);
+}
+.data-table td{padding:10px 14px;border-bottom:1px solid var(--gridline);color:var(--text-primary);white-space:nowrap}
+.data-table tr:hover td{background:rgba(42,120,214,0.03)}
+.data-table .cat-header{background:var(--surface-1);color:var(--text-muted);font-size:11px;letter-spacing:0.05em;border-bottom:1px solid var(--baseline)}
+.data-table .empty-cell{color:var(--text-muted);font-style:italic}
+
+/* Responsive */
+@media(max-width:900px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .chart-grid{grid-template-columns:1fr}
+  .supply-grid{grid-template-columns:repeat(2,1fr)}
+  .bar-label{width:120px;font-size:11px}
+}
+@media(max-width:600px){
+  .kpi-row{grid-template-columns:1fr}
+  .supply-grid{grid-template-columns:1fr}
+  .hero-value{font-size:40px}
+  .donut-wrap{flex-direction:column;align-items:flex-start}
+}
+</style>
+
+<div style="max-width:1280px;margin:0 auto">
+
+<!-- Header -->
+<div class="card" style="margin-bottom:22px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <span style="font-size:13px;color:var(--text-muted)">
+        {% if is_material %}
+        物料库记录 #{{ task.id }}
+        {% else %}
+        任务 #{{ task.id }}
+        {% endif %}
+        {% if task.unique_id %} · <strong style="color:var(--text-primary)">唯一编号: {{ task.unique_id }}</strong>{% endif %}
+      </span>
+      <h2 style="font-size:22px;margin-top:4px">
+        {% if is_material %}
+        {{ task.material_name or task.material_code or '物料' }} <span style="font-size:14px;color:var(--text-muted)">({{ task.material_code or '无编码' }})</span>
+        {% else %}
+        {{ task.title }}
+        {% endif %}
+      </h2>
+      <div style="display:flex;gap:20px;margin-top:10px;font-size:13px;color:var(--text-muted);flex-wrap:wrap">
+        {% if is_material %}
+        <span>🏭 品牌: <strong style="color:var(--text-primary)">{{ task.manufacturer or '-' }}</strong></span>
+        <span>🚚 供应商: <strong style="color:var(--text-primary)">{{ task.supplier or '-' }}</strong></span>
+        <span>📌 来源: <strong style="color:var(--text-primary)">{{ source_label or task.source_type }}</strong></span>
+        {% else %}
+        <span>📋 创建人: <strong style="color:var(--text-primary)">{{ task.creator_name }}</strong></span>
+        <span>👤 负责人: <strong style="color:var(--text-primary)">{{ task.assignee_name }}</strong></span>
+        <span>📅 截止: <strong style="color:{{ '#d03b3b' if task.due_date and task.due_date < current_date and task.status != 'completed' else 'var(--text-primary)' }}">{{ task.due_date or '未设置' }}</strong></span>
+        {% endif %}
+        <span>🕐 更新: {{ task.updated_at[:16] if task.updated_at else '-' }}</span>
+      </div>
+    </div>
+    {% if not is_material %}
+    <span class="status-badge" style="background:{{ STATUS_MAP[task.status].bg }};color:{{ STATUS_MAP[task.status].color }};font-size:14px;padding:6px 16px">
+      {{ STATUS_MAP[task.status].label }}
+    </span>
+    {% endif %}
+  </div>
+
+  <!-- Actions -->
+  <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--gridline)">
+    <div class="btn-group">
+      {% if is_material %}
+      <a href="{{ url_for('material_library') }}" class="btn btn-outline btn-sm">← 返回物料库</a>
+      {% else %}
+      <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-outline btn-sm">← 返回任务详情</a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-sm">📋 任务列表</a>
+      {% endif %}
+
+      {% if not is_material %}
+      {% if user.role == 'member' and task.assigned_to == user.id and task.status in ('assigned','in_progress') %}
+      <a href="{{ url_for('fill_task', task_id=task.id) }}" class="btn btn-primary btn-sm">✏️ 填写/编辑</a>
+      {% endif %}
+
+      {% if user.role == 'leader' and task.status == 'submitted' %}
+      <form method="POST" action="{{ url_for('complete_task', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认审批通过？')">
+        <button class="btn btn-success btn-sm">✓ 审批通过</button>
+      </form>
+      {% endif %}
+
+      {% if user.role == 'leader' %}
+      <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-outline btn-sm">⚙ 编辑任务</a>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- KPI Row -->
+<div class="kpi-row">
+  <div class="hero-card">
+    <div class="hero-label">BOM 总用量</div>
+    <div class="hero-value">{{ task.bom_total or '0' }}</div>
+    <div class="hero-unit">pcs · 覆盖 12 个产品线/阶段</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile-label">标准包装 SPQ</div>
+    <div class="stat-tile-value">{{ task.spq or '-' }}</div>
+    <div class="stat-tile-detail">pcs</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile-label">最小起订 MOQ</div>
+    <div class="stat-tile-value">{{ task.moq or '-' }}</div>
+    <div class="stat-tile-detail">pcs</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile-label">交期 L/T</div>
+    <div class="stat-tile-value">{{ task.lead_time or '-' }}</div>
+    <div class="stat-tile-detail">{{ task.lead_time or '' }}</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-tile-label">峰值月产能</div>
+    <div class="stat-tile-value">{{ task.peak_monthly_capacity or '-' }}</div>
+    <div class="stat-tile-detail">pcs / 月</div>
+  </div>
+</div>
+
+<!-- Charts Row 1: BOM Bar Chart -->
+<div class="chart-grid">
+  <div class="chart-card full-width">
+    <div class="chart-title">BOM 用量分布 — 按产品线/阶段</div>
+    <div class="chart-subtitle">单位：pcs · 按用量降序</div>
+    <div id="bom-bar-chart" style="width:100%">
+      {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
+      <div class="empty-state"><div class="icon">📊</div><p>暂无 BOM 用量数据</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2: Donut + Completeness -->
+<div class="chart-grid">
+  <div class="chart-card">
+    <div class="chart-title">用量占比 — Top 6 产品线</div>
+    <div class="chart-subtitle">其余产品线合并为"其他"</div>
+    <div class="donut-wrap" id="donut-chart">
+      {% if dashboard_data.bom_data|selectattr('value','gt',0)|list|length == 0 %}
+      <div class="empty-state" style="padding:20px"><p>暂无数据</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">数据完整度</div>
+    <div class="chart-subtitle">{{ dashboard_data.total }} 个字段中，已填写 vs 未填写</div>
+    <div class="completeness-wrap" id="completeness-ring"></div>
+    <div class="missing-fields" id="missing-fields"></div>
+  </div>
+</div>
+
+<!-- Supply Chain -->
+<div class="chart-card full-width" style="margin-bottom:22px">
+  <div class="chart-title">供应链信息概览</div>
+  <div class="chart-subtitle">制造商、供应商、产地、产能等信息</div>
+  {% if dashboard_data.supply_data %}
+  <div class="supply-grid">
+    {% for item in dashboard_data.supply_data %}
+    <div class="supply-card">
+      <div class="supply-label">{{ item.label }}</div>
+      <div class="supply-value">{{ item.value }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:20px"><p>暂无供应链数据</p></div>
+  {% endif %}
+</div>
+
+<!-- Full Data Table -->
+<div class="chart-card full-width" style="margin-bottom:22px">
+  <div class="chart-title">完整数据明细</div>
+  <div class="chart-subtitle">全部 {{ dashboard_data.total }} 个字段</div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>分类</th>
+          <th>字段名称</th>
+          <th>值</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set ns = namespace(current_cat='') %}
+        {% for item in dashboard_data.all_fields %}
+        {% if item.category != ns.current_cat %}
+        {% set ns.current_cat = item.category %}
+        <tr><td colspan="3" class="cat-header">{{ ns.current_cat }}</td></tr>
+        {% endif %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px">{{ item.category }}</td>
+          <td style="font-weight:500">{{ item.field }}</td>
+          <td class="{{ 'empty-cell' if not item.filled else '' }}">{{ item.value if item.value else '（未填写）' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Activity Log -->
+<div class="chart-card full-width">
+  <div class="chart-title">📜 操作记录</div>
+  {% if logs %}
+  <div class="timeline">
+    {% for log in logs %}
+    <div class="timeline-item {% if loop.first %}current{% endif %}">
+      <div class="timeline-text">
+        <strong>{{ log.display_name }}</strong>
+        {% if log.action == 'created' %}📝 创建了任务
+        {% elif log.action == 'started' %}▶️ 开始填写
+        {% elif log.action == 'updated' %}💾 保存了草稿
+        {% elif log.action == 'submitted' %}📤 提交了任务，等待审批
+        {% elif log.action == 'withdrawn' %}↩️ 撤回了提交，重新编辑
+        {% elif log.action == 'completed' %}✅ 审批通过，标记为已完成
+        {% elif log.action == 'returned' %}↩️ 退回修改
+        {% elif log.action == 'edited' %}⚙️ 编辑了任务信息
+        {% else %}{{ log.action }}
+        {% endif %}
+        {% if log.comment %}
+        <br><span style="color:var(--text-muted);font-size:12px">→ {{ log.comment }}</span>
+        {% endif %}
+      </div>
+      <div class="timeline-meta">{{ log.created_at[:16] }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state"><p>暂无操作记录</p></div>
+  {% endif %}
+</div>
+
+</div>
+
+<script>
+// ===== Embedded Data =====
+const dashboardData = {{ dashboard_data | tojson | safe }};
+const bomData = dashboardData.bom_data;
+
+// ===== Bar Chart =====
+(function() {
+  const container = document.getElementById('bom-bar-chart');
+  if (!bomData.length || bomData.every(d => d.value === 0)) return;
+  const maxVal = Math.max(...bomData.map(d => d.value));
+
+  bomData.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+
+    const label = document.createElement('div');
+    label.className = 'bar-label';
+    label.textContent = d.label;
+
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+
+    const fill = document.createElement('div');
+    fill.className = 'bar-fill';
+    const pct = maxVal > 0 ? (d.value / maxVal * 100) : 0;
+    fill.style.width = pct + '%';
+
+    const val = document.createElement('span');
+    val.className = 'bar-value';
+    val.textContent = d.value;
+
+    fill.appendChild(val);
+    track.appendChild(fill);
+    row.appendChild(label);
+    row.appendChild(track);
+
+    row.addEventListener('mouseenter', function() {
+      row.style.opacity = '0.85';
+    });
+    row.addEventListener('mouseleave', function() {
+      row.style.opacity = '1';
+    });
+
+    container.appendChild(row);
+  });
+})();
+
+// ===== Donut Chart =====
+(function() {
+  const container = document.getElementById('donut-chart');
+  if (!bomData.length || bomData.every(d => d.value === 0)) return;
+
+  const sorted = [...bomData].sort((a, b) => b.value - a.value);
+  const top5 = sorted.slice(0, 5);
+  const otherSum = sorted.slice(5).reduce((s, d) => s + d.value, 0);
+  const segments = [...top5];
+  if (otherSum > 0) segments.push({ label: '其他（' + (sorted.length - 5) + '项）', value: otherSum });
+
+  const total = segments.reduce((s, d) => s + d.value, 0);
+  const catColors = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#c3c2b7'];
+  const radius = 90, cx = 100, cy = 100;
+
+  // SVG
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 200 200');
+  svg.setAttribute('width', '200');
+  svg.setAttribute('height', '200');
+  svg.classList.add('donut-svg');
+
+  let startAngle = -Math.PI / 2;
+
+  segments.forEach((seg, i) => {
+    const sliceAngle = (seg.value / total) * 2 * Math.PI;
+    const endAngle = startAngle + sliceAngle;
+    const x1 = cx + radius * Math.cos(startAngle);
+    const y1 = cy + radius * Math.sin(startAngle);
+    const x2 = cx + radius * Math.cos(endAngle);
+    const y2 = cy + radius * Math.sin(endAngle);
+    const largeArc = sliceAngle > Math.PI ? 1 : 0;
+    const d = `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', catColors[i]);
+    path.setAttribute('stroke', 'var(--surface-1)');
+    path.setAttribute('stroke-width', '2');
+
+    path.addEventListener('mouseenter', function() { this.style.opacity = '0.85'; });
+    path.addEventListener('mouseleave', function() { this.style.opacity = '1'; });
+
+    svg.appendChild(path);
+    startAngle = endAngle;
+  });
+
+  // Center text
+  const centerText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  centerText.setAttribute('x', cx);
+  centerText.setAttribute('y', cy - 6);
+  centerText.setAttribute('text-anchor', 'middle');
+  centerText.setAttribute('font-size', '22');
+  centerText.setAttribute('font-weight', '700');
+  centerText.setAttribute('fill', 'var(--text-primary)');
+  centerText.textContent = total;
+  svg.appendChild(centerText);
+
+  const centerUnit = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  centerUnit.setAttribute('x', cx);
+  centerUnit.setAttribute('y', cy + 14);
+  centerUnit.setAttribute('text-anchor', 'middle');
+  centerUnit.setAttribute('font-size', '11');
+  centerUnit.setAttribute('fill', 'var(--text-muted)');
+  centerUnit.textContent = 'pcs 总量';
+  svg.appendChild(centerUnit);
+
+  container.appendChild(svg);
+
+  // Legend
+  const legend = document.createElement('div');
+  legend.className = 'donut-legend';
+  segments.forEach((seg, i) => {
+    const item = document.createElement('div');
+    item.className = 'donut-legend-item';
+    const swatch = document.createElement('div');
+    swatch.className = 'donut-swatch';
+    swatch.style.backgroundColor = catColors[i];
+    const name = document.createElement('span');
+    name.textContent = seg.label;
+    const val = document.createElement('span');
+    val.className = 'donut-legend-value';
+    val.textContent = seg.value + ' (' + (seg.value / total * 100).toFixed(1) + '%)';
+    item.appendChild(swatch);
+    item.appendChild(name);
+    item.appendChild(val);
+    legend.appendChild(item);
+  });
+  container.appendChild(legend);
+})();
+
+// ===== Completeness Ring =====
+(function() {
+  const container = document.getElementById('completeness-ring');
+  const pct = dashboardData.pct;
+  const filled = dashboardData.filled;
+  const empty = dashboardData.empty;
+  const total = dashboardData.total;
+
+  const radius = 60, cx = 72, cy = 72, circ = 2 * Math.PI * radius;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 144 144');
+  svg.setAttribute('width', '144');
+  svg.setAttribute('height', '144');
+  svg.classList.add('completeness-ring');
+
+  // Background ring
+  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', radius);
+  bg.setAttribute('fill', 'none');
+  bg.setAttribute('stroke', 'var(--gridline)');
+  bg.setAttribute('stroke-width', '14');
+  svg.appendChild(bg);
+
+  // Filled ring
+  if (pct > 0) {
+    const fg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    fg.setAttribute('cx', cx); fg.setAttribute('cy', cy); fg.setAttribute('r', radius);
+    fg.setAttribute('fill', 'none');
+    fg.setAttribute('stroke', 'var(--good)');
+    fg.setAttribute('stroke-width', '14');
+    fg.setAttribute('stroke-linecap', 'round');
+    fg.setAttribute('stroke-dasharray', (circ * pct / 100) + ' ' + (circ * (1 - pct / 100)));
+    fg.setAttribute('stroke-dashoffset', circ / 4);
+    fg.setAttribute('transform', 'rotate(-90 ' + cx + ' ' + cy + ')');
+    svg.appendChild(fg);
+  }
+
+  // Center text
+  const pctText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  pctText.setAttribute('x', cx); pctText.setAttribute('y', cy - 4);
+  pctText.setAttribute('text-anchor', 'middle');
+  pctText.setAttribute('font-size', '24'); pctText.setAttribute('font-weight', '700');
+  pctText.setAttribute('fill', 'var(--text-primary)');
+  pctText.textContent = pct + '%';
+  svg.appendChild(pctText);
+
+  const subText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  subText.setAttribute('x', cx); subText.setAttribute('y', cy + 16);
+  subText.setAttribute('text-anchor', 'middle');
+  subText.setAttribute('font-size', '11'); subText.setAttribute('fill', 'var(--text-muted)');
+  subText.textContent = '完整度';
+  svg.appendChild(subText);
+
+  container.appendChild(svg);
+
+  // Detail text
+  const detail = document.createElement('div');
+  detail.className = 'completeness-detail';
+  detail.innerHTML = '<strong>' + filled + '</strong> / ' + total + ' 个字段已填写，' + (empty > 0 ? '<strong>' + empty + '</strong> 个字段空白' : '全部填写完毕 ✅');
+  container.appendChild(detail);
+
+  // Missing tags
+  const missingContainer = document.getElementById('missing-fields');
+  if (empty === 0) {
+    const tag = document.createElement('span');
+    tag.className = 'filled-tag';
+    tag.textContent = '✅ 全部字段已填写';
+    missingContainer.appendChild(tag);
+  } else {
+    dashboardData.all_fields.forEach(function(f) {
+      if (!f.filled) {
+        const tag = document.createElement('span');
+        tag.className = 'missing-tag';
+        tag.textContent = f.field + '（' + f.category + '）';
+        missingContainer.appendChild(tag);
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

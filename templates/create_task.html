@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:900px;margin:0 auto">
+
+  <div class="card">
+    <div class="card-header">📝 发起新任务 — 填写物料基础信息</div>
+
+    <form method="POST">
+      <!-- 任务基本信息 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--gridline)">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label"><span class="required">*</span> 任务标题</label>
+          <input type="text" name="title" class="form-input" placeholder="例如：填写 贴片电容 AC0402KRX7R7BB104 物料信息" required autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="required">*</span> 指派给</label>
+          <select name="assigned_to" class="form-select" required>
+            <option value="">-- 选择负责人 --</option>
+            {% for m in members %}
+            <option value="{{ m.id }}">{{ m.display_name }}（{{ m.username }}）</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">计划完成日期</label>
+          <input type="date" name="due_date" class="form-input">
+        </div>
+      </div>
+
+      <!-- 料件信息 -->
+      <div class="info-box" style="background:rgba(42,120,214,0.06);color:var(--s1);border:1px solid rgba(42,120,214,0.15)">
+        💡 <strong>第一步：填写物料基础信息</strong> — 以下6个字段由你（Leader）填写完成。指派后，负责人将补充 BOM用量、商流信息等共计 33 个字段。
+      </div>
+
+      <div class="fields-grid">
+        {% for f in component_fields %}
+        <div class="form-group {% if f.type == 'textarea' %} style="grid-column:1/-1"{% endif %}">
+          <label class="form-label">
+            {{ f.label }}
+            {% if f.required %}<span class="required">*</span>{% endif %}
+          </label>
+          {% if f.type == 'textarea' %}
+          <textarea name="{{ f.col }}" class="form-textarea" rows="2" placeholder="输入{{ f.label }}"></textarea>
+          {% else %}
+          <input type="text" name="{{ f.col }}" class="form-input" placeholder="输入{{ f.label }}" {% if f.required %}required{% endif %}>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--gridline)">
+        <div class="info-box">
+          📋 负责人将补充填写以下 <strong>3 个模块共 33 个字段</strong>：<br>
+          ① BOM用量（13字段）&nbsp; ② 商流信息（18字段）&nbsp; ③ 其他（2字段）<br>
+          <span style="font-size:12px">负责人填写完毕后提交，Leader 可在仪表盘审批（通过/退回）。</span>
+        </div>
+        <div class="btn-group">
+          <button type="submit" class="btn btn-primary">📤 创建任务并通知负责人</button>
+          <a href="{{ url_for('dashboard') }}" class="btn btn-outline">取消</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

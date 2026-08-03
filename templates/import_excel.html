@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.upload-zone{
+  border: 2px dashed var(--baseline);
+  border-radius: var(--radius);
+  padding: 50px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface-1);
+}
+.upload-zone:hover, .upload-zone.dragover{
+  border-color: var(--s1);
+  background: rgba(42,120,214,0.03);
+}
+.upload-zone .icon{font-size: 48px; margin-bottom: 12px; opacity: 0.7}
+.upload-zone h3{font-size: 17px; margin-bottom: 6px; font-weight: 600}
+.upload-zone p{font-size: 13px; color: var(--text-muted)}
+.upload-zone input[type=file]{display: none}
+
+#status{text-align:center; margin-top:14px; font-size:14px; font-weight:500}
+#result-area{display:none; margin-top:18px}
+#mapping-area{display:none; margin-top:18px}
+#final-result{display:none; margin-top:18px}
+
+.match-badge{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:10px;
+  font-size:11px;
+  font-weight:600;
+}
+.match-ok{background:rgba(12,163,12,0.08);color:#0ca30c}
+.match-no{background:rgba(208,59,59,0.06);color:#d03b3b}
+
+.preview-wrap{
+  overflow-x:auto; max-height:400px; overflow-y:auto;
+  border:1px solid var(--gridline); border-radius:8px;
+}
+.preview-table{width:100%;border-collapse:collapse;font-size:12px}
+.preview-table th{
+  position:sticky;top:0;z-index:5;
+  text-align:left;padding:8px 10px;
+  background:var(--gridline);font-size:11px;
+  font-weight:600;color:var(--text-secondary);white-space:nowrap;
+}
+.preview-table td{
+  padding:7px 10px;border-bottom:1px solid var(--gridline);
+  white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;
+}
+.result-cards{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;
+}
+.result-card{
+  text-align:center;padding:20px 14px;
+  border-radius:var(--radius);border:1px solid var(--border);
+  background:var(--surface-1);
+}
+.result-card .num{font-size:32px;font-weight:700}
+.result-card .lbl{font-size:12px;color:var(--text-muted);margin-top:4px}
+</style>
+
+<div style="max-width:1000px;margin:0 auto">
+
+<!-- Upload Zone -->
+<div class="card">
+  <div class="upload-zone" id="drop-zone">
+    <div class="icon">📤</div>
+    <h3>点击上传或拖拽 Excel 文件到此处</h3>
+    <p>支持 .xlsx / .xls。系统会自动识别列标题并匹配字段。</p>
+    <input type="file" id="file-input" accept=".xlsx,.xls">
+  </div>
+  <div id="status"></div>
+</div>
+
+<!-- Import Result (shown after successful upload) -->
+<div id="result-area">
+  <div class="card" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:6px" id="result-icon">✅</div>
+    <h2 style="margin-bottom:10px"><span id="match-badge"></span></h2>
+    <p style="font-size:14px;color:var(--text-muted)" id="result-info"></p>
+
+    <!-- Mapping summary -->
+    <div class="info-box" style="margin-top:12px;text-align:left">
+      <strong>识别结果：</strong>
+      <div id="mapping-summary" style="margin-top:6px;font-size:12px;max-height:200px;overflow-y:auto"></div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-group" style="justify-content:center;margin-top:16px">
+      <button class="btn btn-outline" id="btn-show-mapping" style="display:none" onclick="toggleMapping()">🔧 调整列对应关系</button>
+      <button class="btn btn-outline" onclick="resetAll()">重新上传</button>
+      <button class="btn btn-primary" id="btn-import" onclick="doImport()">⚡ 导入到物料库</button>
+    </div>
+    <div id="import-status" style="margin-top:12px"></div>
+  </div>
+
+  <!-- Data Preview -->
+  <div class="card">
+    <div class="card-header">👁 数据预览 <span style="font-size:12px;color:var(--text-muted);font-weight:400" id="preview-label"></span></div>
+    <div class="preview-wrap" id="preview-table"></div>
+  </div>
+</div>
+
+<!-- Manual Column Mapping (only shown when needed) -->
+<div id="mapping-area">
+  <div class="card">
+    <div class="card-header">🔗 调整列对应关系 <span style="font-size:12px;color:var(--text-muted);font-weight:400">— 为每列选择对应的平台字段</span></div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;font-size:13px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:8px 10px;background:var(--gridline)">Excel 列标题</th>
+            <th style="text-align:left;padding:8px 10px;background:var(--gridline)">对应平台字段</th>
+          </tr>
+        </thead>
+        <tbody id="mapping-tbody"></tbody>
+      </table>
+    </div>
+    <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="toggleMapping()">收起</button>
+  </div>
+</div>
+
+<!-- Final Result -->
+<div id="final-result">
+  <div class="card" style="text-align:center">
+    <div style="font-size:48px">✅</div>
+    <h2 style="color:var(--good);margin-bottom:10px">导入完成</h2>
+    <div class="result-cards" style="grid-template-columns:1fr">
+      <div class="result-card"><div class="num" style="color:var(--good);font-size:48px" id="count-imported">0</div><div class="lbl">新增记录</div></div>
+    </div>
+    <p style="font-size:14px;color:var(--text-muted);margin-top:8px" id="final-msg"></p>
+    <div class="btn-group" style="justify-content:center;margin-top:16px">
+      <a href="{{ url_for('material_library') }}" class="btn btn-primary">📚 查看物料库</a>
+      <button class="btn btn-outline" onclick="resetAll()">📤 导入更多</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ====== DOM refs ======
+var $ = function(id) { return document.getElementById(id); };
+
+var dropZone = $('drop-zone');
+var fileInput = $('file-input');
+var parsedData = null;
+var isAutoMatch = true;
+
+// ====== Upload handlers ======
+dropZone.addEventListener('click', function() { fileInput.click(); });
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', function() {
+  if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+});
+
+async function handleFile(file) {
+  $('status').innerHTML = '<span style="color:var(--s1)">⏳ 正在解析文件 (' + (file.size/1024).toFixed(0) + 'KB)...</span>';
+  $('result-area').style.display = 'none';
+  $('mapping-area').style.display = 'none';
+  $('final-result').style.display = 'none';
+
+  var formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    var resp = await fetch('/import/upload', { method: 'POST', body: formData });
+    if (!resp.ok) {
+      var txt = '';
+      try { txt = await resp.text(); } catch(e) {}
+      $('status').innerHTML = '<span style="color:var(--critical)">❌ 服务器错误 (HTTP ' + resp.status + ')。请确认服务器已启动。</span>';
+      return;
+    }
+
+    var data = await resp.json();
+    if (data.error) {
+      $('status').innerHTML = '<span style="color:var(--critical)">❌ ' + data.error + '</span>';
+      return;
+    }
+
+    parsedData = data;
+    isAutoMatch = data.auto_import;
+    $('status').innerHTML = '<span style="color:var(--good)">✅ 解析成功！共 ' + data.total_rows + ' 行数据</span>';
+
+    showResult(data);
+  } catch(e) {
+    $('status').innerHTML = '<span style="color:var(--critical)">❌ 请求失败: ' + e.message + '（请确认服务器已启动）</span>';
+  }
+}
+
+function showResult(data) {
+  // Match badge
+  if (data.auto_import) {
+    $('match-badge').innerHTML = '<span style="color:var(--good)">全部识别成功 ' + data.matched_count + '/' + data.total_columns + ' 列</span>';
+    $('btn-show-mapping').style.display = 'inline-flex';
+  } else {
+    $('match-badge').innerHTML = '<span style="color:var(--s4)">⚠ 仅识别 ' + data.matched_count + '/' + data.total_columns + ' 列，请调整映射</span>';
+    $('btn-show-mapping').style.display = 'inline-flex';
+    isAutoMatch = false;
+    buildMappingTable(data);
+  }
+
+  $('result-info').textContent = '从第 ' + data.data_start_row + ' 行开始，共 ' + data.total_rows + ' 行数据待导入';
+  $('result-icon').textContent = data.auto_import ? '✅' : '⚠️';
+  $('preview-label').textContent = '（前 ' + Math.min(data.total_rows, 20) + ' 行）';
+
+  // Mapping summary
+  var summary = '';
+  var modGroups = {};
+  for (var hdr in data.mapping) {
+    var info = data.mapping[hdr];
+    if (!info.col) continue;
+    if (!modGroups[info.category]) modGroups[info.category] = [];
+    modGroups[info.category].push(hdr + ' → ' + info.label);
+  }
+  for (var mod in modGroups) {
+    summary += '<div style="margin-bottom:4px"><strong>' + mod + '</strong>: ' + modGroups[mod].join('、') + '</div>';
+  }
+  $('mapping-summary').innerHTML = summary || '（无映射）';
+
+  // Preview table
+  buildPreview(data);
+
+  $('result-area').style.display = 'block';
+  $('final-result').style.display = 'none';
+}
+
+function buildPreview(data) {
+  var headers = data.headers.filter(function(h) { return h; });
+  var rows = data.preview.slice(0, 20);
+  var html = '<table class="preview-table"><thead><tr><th>#</th>';
+  for (var i = 0; i < headers.length; i++) {
+    html += '<th>' + headers[i] + '</th>';
+  }
+  html += '</tr></thead><tbody>';
+  for (var r = 0; r < rows.length; r++) {
+    html += '<tr><td>' + (r + 1) + '</td>';
+    for (var c = 0; c < headers.length; c++) {
+      html += '<td>' + (rows[r][headers[c]] || '') + '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  $('preview-table').innerHTML = html;
+}
+
+function buildMappingTable(data) {
+  var html = '';
+  for (var i = 0; i < data.headers.length; i++) {
+    var hdr = data.headers[i];
+    if (!hdr) continue;
+    var map = data.mapping[hdr] || {col:'',label:hdr,matched:false,category:''};
+    var badge = map.col && map.matched
+      ? '<span class="match-badge match-ok">已识别</span>'
+      : (map.col ? '<span class="match-badge" style="background:rgba(237,161,0,0.08);color:#b87d00">待确认</span>' : '<span class="match-badge match-no">未识别</span>');
+
+    var sel = '<select data-header="' + hdr.replace(/"/g,'&quot;') + '" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px">';
+    sel += '<option value="">-- 不导入 --</option>';
+    for (var j = 0; j < data.field_options.length; j++) {
+      var f = data.field_options[j];
+      var s = f.col === map.col ? ' selected' : '';
+      sel += '<option value="' + f.col + '"' + s + '>' + f.label + ' (' + f.col + ')</option>';
+    }
+    sel += '</select>';
+
+    html += '<tr>';
+    html += '<td style="padding:6px 10px"><strong>' + hdr + '</strong></td>';
+    html += '<td style="padding:6px 10px">' + badge + ' ' + sel + '</td>';
+    html += '</tr>';
+  }
+  $('mapping-tbody').innerHTML = html;
+}
+
+function toggleMapping() {
+  if (!$('mapping-area')) return;
+  var vis = $('mapping-area').style.display;
+  $('mapping-area').style.display = (vis === 'none' || vis === '') ? 'block' : 'none';
+  if (!parsedData) return;
+  buildMappingTable(parsedData);
+}
+
+async function doImport() {
+  if (!$('btn-import') || !$('import-status')) return;
+  $('btn-import').disabled = true;
+  $('btn-import').textContent = '⏳ 导入中...';
+  if ($('import-status')) $('import-status').innerHTML = '';
+
+  var mapping = {};
+  var selects = document.querySelectorAll('#mapping-tbody select');
+  if (selects.length === 0 || isAutoMatch) {
+    // Use auto-generated mapping
+    for (var hdr in parsedData.mapping) {
+      var info = parsedData.mapping[hdr];
+      if (info.col) mapping[hdr] = info.col;
+    }
+  } else {
+    // Use manual mapping from dropdowns
+    for (var i = 0; i < selects.length; i++) {
+      var sel = selects[i];
+      if (sel.value) mapping[sel.dataset.header] = sel.value;
+    }
+  }
+
+  try {
+    var resp = await fetch('/import/confirm', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        mapping: mapping,
+        cache_id: parsedData.cache_id
+      })
+    });
+    var result = await resp.json();
+    if (result.error) {
+      if ($('import-status')) $('import-status').innerHTML = '<span style="color:var(--critical)">❌ ' + result.error + '</span>';
+      $('btn-import').disabled = false;
+      $('btn-import').textContent = '⚡ 导入到物料库';
+      return;
+    }
+
+    // Show final result
+    $('count-imported').textContent = result.imported;
+    $('final-msg').textContent = result.message;
+
+    $('result-area').style.display = 'none';
+    $('mapping-area').style.display = 'none';
+    $('final-result').style.display = 'block';
+  } catch(e) {
+    if ($('import-status')) $('import-status').innerHTML = '<span style="color:var(--critical)">❌ 导入失败: ' + e.message + '</span>';
+    $('btn-import').disabled = false;
+    $('btn-import').textContent = '⚡ 导入到物料库';
+  }
+}
+
+function resetAll() {
+  parsedData = null;
+  isAutoMatch = true;
+  $('status').innerHTML = '';
+  $('result-area').style.display = 'none';
+  $('mapping-area').style.display = 'none';
+  $('final-result').style.display = 'none';
+  $('btn-import').disabled = false;
+  $('btn-import').textContent = '⚡ 导入到物料库';
+  fileInput.value = '';
+}
+</script>
+{% endblock %}

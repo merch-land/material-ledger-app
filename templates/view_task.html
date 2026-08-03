@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:1000px;margin:0 auto">
+
+<!-- Header -->
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <span style="font-size:13px;color:var(--text-muted)">
+        任务 #{{ task.id }}
+        {% if task.unique_id %} · 唯一编号: <strong style="color:var(--text-primary)">{{ task.unique_id }}</strong>{% endif %}
+      </span>
+      <h2 style="font-size:22px;margin-top:4px">{{ task.title }}</h2>
+    </div>
+    <span class="status-badge" style="background:{{ STATUS_MAP[task.status].bg }};color:{{ STATUS_MAP[task.status].color }};font-size:14px;padding:6px 16px">
+      {{ STATUS_MAP[task.status].label }}
+    </span>
+  </div>
+  <div style="display:flex;gap:24px;margin-top:12px;font-size:13px;color:var(--text-muted);flex-wrap:wrap">
+    <span>📋 创建人: <strong style="color:var(--text-primary)">{{ task.creator_name }}</strong></span>
+    <span>👤 负责人: <strong style="color:var(--text-primary)">{{ task.assignee_name }}</strong></span>
+    <span>📅 截止: <strong style="color:{{ '#d03b3b' if task.due_date and task.due_date < current_date and task.status != 'completed' else 'var(--text-primary)' }}">{{ task.due_date or '未设置' }}</strong></span>
+    <span>🕐 更新: {{ task.updated_at[:16] if task.updated_at else '-' }}</span>
+  </div>
+</div>
+
+<!-- Actions -->
+<div class="card">
+  <div class="btn-group">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-sm">← 返回列表</a>
+
+    {% if user.role == 'member' and task.assigned_to == user.id and task.status in ('assigned','in_progress') %}
+    <a href="{{ url_for('fill_task', task_id=task.id) }}" class="btn btn-primary">✏️ 填写/编辑</a>
+    {% endif %}
+
+    {% if user.role == 'member' and task.assigned_to == user.id and task.status == 'submitted' %}
+    <form method="POST" action="{{ url_for('withdraw_task', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认撤回提交？撤回后可以重新编辑。')">
+      <button class="btn btn-warning">↩ 撤回提交</button>
+    </form>
+    {% endif %}
+
+    {% if user.role == 'leader' %}
+    <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-outline">⚙ 编辑任务</a>
+    <a href="{{ url_for('fill_task', task_id=task.id) }}" class="btn btn-outline">👁 查看填写表单</a>
+    {% endif %}
+
+    {% if user.role == 'leader' and task.status == 'submitted' %}
+    <form method="POST" action="{{ url_for('complete_task', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认审批通过？将标记为完成。')">
+      <button class="btn btn-success">✓ 审批通过</button>
+    </form>
+    <button class="btn btn-warning" onclick="toggleReturn()">↩ 退回修改</button>
+    {% endif %}
+
+    <!-- Dashboard button -->
+    <a href="{{ url_for('task_dashboard', task_id=task.id) }}" class="btn btn-outline" style="margin-left:auto">
+      📊 分析仪表盘
+    </a>
+    <a href="{{ url_for('export_task', task_id=task.id) }}" class="btn btn-outline btn-sm">📥 导出Excel</a>
+  </div>
+
+  {% if user.role == 'leader' and task.status == 'submitted' %}
+  <div id="return-form" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--gridline)">
+    <form method="POST" action="{{ url_for('return_task', task_id=task.id) }}">
+      <div class="form-group">
+        <label class="form-label">退回原因（告知负责人需要修改什么）</label>
+        <input type="text" name="reason" class="form-input" placeholder="例如：品牌/制造商需要补充、BOM用量2K V5数据有误" style="max-width:500px">
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-warning btn-sm">确认退回</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="toggleReturn()">取消</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Module Data -->
+{% for mod in modules %}
+<div class="card">
+  <div class="detail-section-title">{{ mod.icon }} {{ mod.name }}</div>
+
+  {% if mod.key == 'bom_usage' %}
+  <div class="bom-grid">
+    {% for f in mod.fields %}
+    <div class="bom-cell {{ 'bom-total' if f.col == 'bom_total' else '' }}">
+      <div class="blabel">{{ f.label }}</div>
+      <div class="bval">{{ task[f.col] if task[f.col] else '-' }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="data-grid">
+    {% for f in mod.fields %}
+    <div class="data-card{% if f.type == 'textarea' %} span-2{% endif %}">
+      <div class="dc-label">{{ f.label }}</div>
+      <div class="dc-value{{ ' empty' if not task[f.col] else '' }}">
+        {{ task[f.col] if task[f.col] else '（未填写）' }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+
+<!-- Activity Log -->
+<div class="card">
+  <div class="card-header">📜 操作记录</div>
+  {% if logs %}
+  <div class="timeline">
+    {% for log in logs %}
+    <div class="timeline-item {% if loop.first %}current{% endif %}">
+      <div class="timeline-text">
+        <strong>{{ log.display_name }}</strong>
+        {% if log.action == 'created' %}📝 创建了任务
+        {% elif log.action == 'started' %}▶️ 开始填写
+        {% elif log.action == 'updated' %}💾 保存了草稿
+        {% elif log.action == 'submitted' %}📤 提交了任务，等待审批
+        {% elif log.action == 'withdrawn' %}↩️ 撤回了提交，重新编辑
+        {% elif log.action == 'completed' %}✅ 审批通过，标记为已完成
+        {% elif log.action == 'returned' %}↩️ 退回修改
+        {% elif log.action == 'edited' %}⚙️ 编辑了任务信息
+        {% else %}{{ log.action }}
+        {% endif %}
+        {% if log.comment %}
+        <br><span style="color:var(--text-muted);font-size:12px">→ {{ log.comment }}</span>
+        {% endif %}
+      </div>
+      <div class="timeline-meta">{{ log.created_at[:16] }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state"><p>暂无操作记录</p></div>
+  {% endif %}
+</div>
+
+</div>
+
+<script>
+function toggleReturn() {
+  var el = document.getElementById('return-form');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}
