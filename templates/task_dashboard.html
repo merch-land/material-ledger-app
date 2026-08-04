@@ -220,8 +220,10 @@
         {% endif %}
         <span>🕐 更新: {{ task.updated_at[:16] if task.updated_at else '-' }}</span>
         {% if task.attachment_file %}
-        {% set aps = task.attachment_file.split('|', 1) %}
-        <span>📎 <a href="{{ url_for('download_attachment', task_id=task.id) }}">{{ aps[0] }}</a></span>
+        {% set aps = task.attachment_file.split('|') %}
+        <span>📎 <a href="{{ url_for('download_attachment', task_id=task.id) }}">{{ aps[0] }}</a>
+        {% if aps|length >= 3 and aps[2] %}<span style="font-size:10px;color:var(--s1)">[{{ aps[2] }}]</span>{% endif %}
+        </span>
         {% endif %}
       </div>
     </div>

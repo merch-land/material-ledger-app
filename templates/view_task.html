@@ -112,12 +112,20 @@
 
 <!-- Attachment -->
 {% if task.attachment_file %}
-{% set attach_parts = task.attachment_file.split('|', 1) %}
+{% set attach_parts = task.attachment_file.split('|') %}
 <div class="card">
   <div class="card-header">📎 附件</div>
-  <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
-    <span style="font-size:14px">📄 {{ attach_parts[0] }}</span>
-    <a href="{{ url_for('download_attachment', task_id=task.id) }}" class="btn btn-outline btn-sm">⬇ 下载附件</a>
+  <div style="display:flex;align-items:center;gap:12px;padding:10px 0;flex-wrap:wrap">
+    <span style="font-size:14px">📄 <strong>{{ attach_parts[0] }}</strong></span>
+    {% if attach_parts|length >= 3 and attach_parts[2] %}
+    <span style="background:rgba(42,120,214,0.08);color:var(--s1);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:500">📝 {{ attach_parts[2] }}</span>
+    {% endif %}
+    <a href="{{ url_for('download_attachment', task_id=task.id) }}" class="btn btn-outline btn-sm">⬇ 下载</a>
+    {% if (user.role == 'leader' or task.assigned_to == user.id) %}
+    <form method="POST" action="{{ url_for('delete_attachment', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认删除附件「{{ attach_parts[0] }}」？')">
+      <button class="btn btn-outline btn-sm" style="color:var(--critical);border-color:var(--critical)">🗑 删除附件</button>
+    </form>
+    {% endif %}
   </div>
 </div>
 {% endif %}

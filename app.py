@@ -665,8 +665,9 @@ def fill_task(task_id):
             safe_name = f"{uuid.uuid4().hex}{ext}"
             file_path = os.path.join(UPLOAD_DIR, safe_name)
             uploaded_file.save(file_path)
-            # 存储 原始文件名|存储文件名
-            updates['attachment_file'] = f"{uploaded_file.filename}|{safe_name}"
+            # 存储 原始文件名|存储文件名|备注
+            note = request.form.get('attachment_note', '').strip()
+            updates['attachment_file'] = f"{uploaded_file.filename}|{safe_name}|{note}"
 
         new_status = 'submitted' if action == 'submit' else 'in_progress'
 
@@ -762,6 +763,43 @@ def download_attachment(task_id):
         return redirect(url_for('view_task', task_id=task_id))
 
     return send_file(file_path, as_attachment=True, download_name=original_name)
+
+@app.route('/task/<int:task_id>/delete-attachment', methods=['POST'])
+@login_required
+def delete_attachment(task_id):
+    """删除任务附件"""
+    user = get_current_user()
+    db = get_db()
+    task = db.execute("SELECT * FROM tasks WHERE id=?", [task_id]).fetchone()
+    if not task:
+        flash('任务不存在', 'error')
+        return redirect(url_for('dashboard'))
+
+    # 权限：成员只能删自己任务的附件，leader 可以删任何
+    if user['role'] != 'leader' and task['assigned_to'] != user['id']:
+        flash('无权删除此附件', 'error')
+        return redirect(url_for('dashboard'))
+
+    if not task['attachment_file']:
+        flash('该任务没有附件', 'error')
+        return redirect(url_for('view_task', task_id=task_id))
+
+    # 删除物理文件
+    parts = task['attachment_file'].split('|')
+    if len(parts) >= 2:
+        stored_name = parts[1]
+        file_path = os.path.join(UPLOAD_DIR, stored_name)
+        try:
+            os.remove(file_path)
+        except Exception:
+            pass
+
+    db.execute("UPDATE tasks SET attachment_file='', updated_at=CURRENT_TIMESTAMP WHERE id=?", [task_id])
+    db.execute("INSERT INTO activity_log (task_id, user_id, action, comment) VALUES (?,?,'delete_attachment','🗑 删除了附件')",
+               [task_id, user['id']])
+    db.commit()
+    flash('附件已删除', 'info')
+    return redirect(url_for('view_task', task_id=task_id))
 
 @app.route('/task/<int:task_id>/undo-complete', methods=['POST'])
 @login_required
