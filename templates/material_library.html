@@ -416,7 +416,7 @@ const CAN_MANAGE = {{ 'true' if can_manage else 'false' }};
 const SOURCE_LABELS = {{ SOURCE_LABELS | tojson | safe }};
 
 // ===== Field Definitions =====
-const ALL_FIELDS = [
+let ALL_FIELDS = [
   // 料件信息
   {col:'unique_id', label:'唯一编号', cat:'料件信息'},
   {col:'product', label:'产品', cat:'料件信息'},
