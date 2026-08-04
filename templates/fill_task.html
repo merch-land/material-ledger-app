@@ -141,9 +141,7 @@
     <span style="background:rgba(42,120,214,0.08);color:var(--s1);padding:2px 8px;border-radius:4px;font-size:11px">{{ attach_parts[2] }}</span>
     {% endif %}
     <a href="{{ url_for('download_attachment', task_id=task.id) }}" class="btn btn-outline btn-sm">⬇ 下载</a>
-    <form method="POST" action="{{ url_for('delete_attachment', task_id=task.id) }}" style="display:inline" onsubmit="return confirm('确认删除附件「{{ attach_parts[0] }}」？')">
-      <button class="btn btn-danger btn-sm">🗑 删除</button>
-    </form>
+    <button type="button" class="btn btn-danger btn-sm" onclick="deleteAttach({{ task.id }}, '{{ attach_parts[0] }}')">🗑 删除</button>
     <span style="font-size:11px;color:var(--text-muted)">上传新文件将替换旧文件</span>
   </div>
   {% endif %}
@@ -243,5 +241,19 @@ window.addEventListener('beforeunload', function(e){
 });
 // Clear warning on submit
 document.querySelector('form').addEventListener('submit', function(){ formTouched = false; });
+
+async function deleteAttach(taskId, fileName) {
+  if (!confirm('确认删除附件「' + fileName + '」？')) return;
+  try {
+    var resp = await fetch('/task/' + taskId + '/delete-attachment', { method: 'POST' });
+    if (resp.redirected) {
+      window.location.href = resp.url;
+    } else {
+      location.reload();
+    }
+  } catch(e) {
+    alert('删除失败: ' + e.message);
+  }
+}
 </script>
 {% endblock %}
