@@ -476,16 +476,15 @@ let openPickerCol = null;
 var customFieldsLoaded = false;
 
 async function loadCustomFields() {
-  if (!CAN_MANAGE) return;
   try {
     var resp = await fetch('/api/custom-fields');
+    if (!resp.ok) return;
     var fields = await resp.json();
     // Remove old custom field entries, then add fresh ones
     ALL_FIELDS = ALL_FIELDS.filter(function(f){ return !f._custom; });
     fields.forEach(function(cf){
       ALL_FIELDS.push({col:'_custom_'+cf.id, label:cf.name, cat:'🏷 自定义', _custom:true, _id:cf.id});
     });
-    customFieldsLoaded = true;
   } catch(e) {}
 }
 
@@ -509,8 +508,8 @@ function fmtValue(col, val, customData) {
 }
 
 async function initColumns() {
+  await loadCustomFields();
   if (CAN_MANAGE) {
-    await loadCustomFields();
     const saved = localStorage.getItem('ml_columns');
     if (saved) {
       try { columnConfig = JSON.parse(saved); } catch(e) {}

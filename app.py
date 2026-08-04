@@ -1588,17 +1588,19 @@ def material_delete(mat_id):
 @app.route('/api/custom-fields', methods=['GET', 'POST', 'DELETE'])
 @login_required
 def api_custom_fields():
-    """管理自定义字段：GET 返回列表，POST 添加，DELETE 删除"""
+    """管理自定义字段：GET 返回列表（所有人），POST 添加（管理员），DELETE 删除（管理员）"""
     user = get_current_user()
-    if not can_manage_library(user):
-        return jsonify({'error': '无权限'}), 403
     db = get_db()
 
     if request.method == 'GET':
         fields = db.execute("SELECT * FROM custom_fields ORDER BY created_at").fetchall()
         return jsonify([{'id': f['id'], 'name': f['name']} for f in fields])
 
-    elif request.method == 'POST':
+    # POST/DELETE require manage permission
+    if not can_manage_library(user):
+        return jsonify({'error': '无权限'}), 403
+
+    if request.method == 'POST':
         data = request.get_json()
         name = (data.get('name') or '').strip()
         if not name or len(name) > 30:
