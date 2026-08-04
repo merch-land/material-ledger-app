@@ -161,6 +161,7 @@ def init_db():
         notes TEXT DEFAULT '',
         due_date TEXT DEFAULT '',
         attachment_file TEXT DEFAULT '',
+        custom_data TEXT DEFAULT '{{}}',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -237,6 +238,12 @@ def init_db():
     # Migrate: add attachment_file to tasks
     try:
         db.execute("ALTER TABLE tasks ADD COLUMN attachment_file TEXT DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
+
+    # Migrate: add custom_data to tasks
+    try:
+        db.execute("ALTER TABLE tasks ADD COLUMN custom_data TEXT DEFAULT '{}'")
     except sqlite3.OperationalError:
         pass
 
@@ -584,9 +591,17 @@ def view_task(task_id):
         WHERE a.task_id=? ORDER BY a.created_at DESC
     """, [task_id]).fetchall()
 
+    custom_fields = db.execute("SELECT * FROM custom_fields ORDER BY created_at").fetchall()
+    task_custom = {}
+    try:
+        task_custom = json.loads(task['custom_data'] or '{}')
+    except (json.JSONDecodeError, TypeError):
+        pass
+
     return render_template('view_task.html',
         user=user, task=task, logs=logs,
-        modules=MODULES, STATUS_MAP=STATUS_MAP)
+        modules=MODULES, STATUS_MAP=STATUS_MAP,
+        custom_fields=custom_fields, task_custom_data=task_custom)
 
 # ============================================================
 # Task Dashboard (standalone route)
@@ -619,10 +634,18 @@ def task_dashboard(task_id):
         WHERE a.task_id=? ORDER BY a.created_at DESC
     """, [task_id]).fetchall()
 
+    custom_fields = db.execute("SELECT * FROM custom_fields ORDER BY created_at").fetchall()
+    task_custom = {}
+    try:
+        task_custom = json.loads(task['custom_data'] or '{}')
+    except (json.JSONDecodeError, TypeError):
+        pass
+
     return render_template('task_dashboard.html',
         user=user, task=task, logs=logs,
         modules=MODULES, STATUS_MAP=STATUS_MAP,
-        dashboard_data=dashboard_data)
+        dashboard_data=dashboard_data,
+        custom_fields=custom_fields, task_custom_data=task_custom)
 
 # ============================================================
 # Fill Task (Member)
@@ -682,6 +705,21 @@ def fill_task(task_id):
             note = request.form.get('attachment_note', '').strip()
             updates['attachment_file'] = f"{uploaded_file.filename}|{safe_name}|{note}"
 
+        # Handle custom fields data
+        custom_data = {}
+        existing_custom = {}
+        try:
+            existing_custom = json.loads(task['custom_data'] or '{}')
+        except (json.JSONDecodeError, TypeError):
+            pass
+        for key, val in request.form.items():
+            if key.startswith('_cf_'):
+                field_name = key[4:]  # remove '_cf_' prefix
+                custom_data[field_name] = val.strip()
+        # Merge with existing (keep old values that weren't in this form submission)
+        merged = {**existing_custom, **custom_data}
+        updates['custom_data'] = json.dumps(merged, ensure_ascii=False)
+
         new_status = 'submitted' if action == 'submit' else 'in_progress'
 
         set_parts = [f"{col}=?" for col in updates.keys()]
@@ -710,8 +748,16 @@ def fill_task(task_id):
                    [task_id, user['id']])
         db.commit()
 
+    custom_fields = db.execute("SELECT * FROM custom_fields ORDER BY created_at").fetchall()
+    task_custom = {}
+    try:
+        task_custom = json.loads(task['custom_data'] or '{}')
+    except (json.JSONDecodeError, TypeError):
+        pass
+
     return render_template('fill_task.html', user=user, task=task,
-                          leader_modules=LEADER_MODULES, member_modules=MEMBER_MODULES, is_preview=is_preview)
+                          leader_modules=LEADER_MODULES, member_modules=MEMBER_MODULES, is_preview=is_preview,
+                          custom_fields=custom_fields, task_custom_data=task_custom)
 
 # ============================================================
 # Complete / Return (Leader)
@@ -741,14 +787,15 @@ def complete_task(task_id):
         set_parts = [f"{col}=?" for col in all_cols]
         set_parts.append("source_task_id=?")
         set_parts.append("source_type=?")
+        set_parts.append("custom_data=?")
         set_parts.append("updated_at=CURRENT_TIMESTAMP")
         db.execute(f"UPDATE material_library SET {', '.join(set_parts)} WHERE id=?",
-                   [vals[c] for c in all_cols] + [task_id, 'task', existing['id']])
+                   [vals[c] for c in all_cols] + [task_id, 'task', task['custom_data'] or '{}', existing['id']])
     else:
-        cols_sql = ', '.join(all_cols + ['source_task_id', 'source_type'])
-        placeholders = ', '.join(['?' for _ in range(len(all_cols) + 2)])
+        cols_sql = ', '.join(all_cols + ['source_task_id', 'source_type', 'custom_data'])
+        placeholders = ', '.join(['?' for _ in range(len(all_cols) + 3)])
         db.execute(f"INSERT INTO material_library ({cols_sql}) VALUES ({placeholders})",
-                   [vals[c] for c in all_cols] + [task_id, 'task'])
+                   [vals[c] for c in all_cols] + [task_id, 'task', task['custom_data'] or '{}'])
 
     db.commit()
     flash('已审批通过！', 'success')
@@ -1554,6 +1601,12 @@ def material_dashboard(mat_id):
     # build_dashboard_data 需要的字段名和 material_library/tasks 一致，直接复用
     dashboard_data = build_dashboard_data(mat)
     SOURCE_LABELS = {'task': '任务同步', 'manual': '手动录入', 'import': 'Excel导入'}
+    custom_fields = db.execute("SELECT * FROM custom_fields ORDER BY created_at").fetchall()
+    task_custom = {}
+    try:
+        task_custom = json.loads(mat['custom_data'] or '{}')
+    except (json.JSONDecodeError, TypeError):
+        pass
 
     return render_template('task_dashboard.html',
         user=user,
@@ -1563,7 +1616,9 @@ def material_dashboard(mat_id):
         dashboard_data=dashboard_data,
         source_label=SOURCE_LABELS.get(mat['source_type'] or 'task', mat['source_type']),
         is_material=True,  # 标记这是物料库仪表盘
-        logs=[])
+        logs=[],
+        custom_fields=custom_fields,
+        task_custom_data=task_custom)
 
 @app.route('/materials/<int:mat_id>/delete', methods=['POST'])
 @login_required

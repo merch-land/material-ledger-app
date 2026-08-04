@@ -110,6 +110,22 @@
 </div>
 {% endfor %}
 
+<!-- Custom Fields -->
+{% if custom_fields %}
+<div class="card">
+  <div class="detail-section-title">🏷 自定义字段</div>
+  <div class="data-grid">
+    {% for cf in custom_fields %}
+    {% set cf_val = (task_custom_data.get(cf.name) or '') if task_custom_data else '' %}
+    <div class="data-card">
+      <div class="dc-label">🏷 {{ cf.name }}</div>
+      <div class="dc-value {{ 'empty' if not cf_val else '' }}">{{ cf_val if cf_val else '（未填写）' }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Attachment -->
 {% if task.attachment_file %}
 {% set attach_parts = task.attachment_file.split('|') %}

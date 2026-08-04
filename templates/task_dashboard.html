@@ -346,6 +346,22 @@
   {% endif %}
 </div>
 
+<!-- Custom Fields -->
+{% if custom_fields %}
+<div class="full-card">
+  <div class="full-card-header">🏷 自定义字段</div>
+  <div class="supply-row" style="grid-template-columns:repeat(4,1fr)">
+    {% for cf in custom_fields %}
+    {% set cf_val = (task_custom_data.get(cf.name) or '') if task_custom_data else '' %}
+    <div class="supply-card">
+      <div class="supply-label">🏷 {{ cf.name }}</div>
+      <div class="supply-value">{{ cf_val if cf_val else '（未填写）' }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Full Data Table -->
 <div class="full-card">
   <div class="full-card-header">📋 完整数据明细</div>
