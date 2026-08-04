@@ -621,14 +621,34 @@ function togglePicker(e, colIdx) {
     filter = (filter || '').toLowerCase();
     var currentCol = columnConfig[colIdx];
     var html = '';
-    var count = 0;
+    // Split into custom and standard fields
+    var customs = [], standards = [];
     for (var i = 0; i < ALL_FIELDS.length; i++) {
       var f = ALL_FIELDS[i];
       if (filter && f.label.toLowerCase().indexOf(filter) === -1 && f.col.toLowerCase().indexOf(filter) === -1) continue;
-      var activeClass = f.col === currentCol ? ' active' : '';
-      html += '<div class="col-picker-item' + activeClass + '" data-col="' + f.col + '" onclick="selectColumn(' + colIdx + ',\'' + f.col + '\')">';
-      html += escapeHtml(f.label);
-      html += '<span class="col-picker-cat">' + escapeHtml(f.cat) + '</span>';
+      if (f._custom) { customs.push(f); } else { standards.push(f); }
+    }
+    // Render custom fields first (if any)
+    if (customs.length > 0) {
+      html += '<div style="padding:6px 14px;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;border-bottom:1px solid var(--gridline)">🏷 自定义字段</div>';
+      for (var ci = 0; ci < customs.length; ci++) {
+        var cf = customs[ci];
+        var activeClass = cf.col === currentCol ? ' active' : '';
+        html += '<div class="col-picker-item' + activeClass + '" data-col="' + cf.col + '" onclick="selectColumn(' + colIdx + ',\'' + cf.col + '\')">';
+        html += '🏷 ' + escapeHtml(cf.label);
+        html += '<span class="col-picker-cat">自定义</span>';
+        html += '</div>';
+      }
+      html += '<div style="padding:4px 14px;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;border-bottom:1px solid var(--gridline);border-top:1px solid var(--gridline)">📋 系统字段</div>';
+    }
+    // Render standard fields
+    var count = customs.length;
+    for (var si = 0; si < standards.length; si++) {
+      var sf = standards[si];
+      var sActive = sf.col === currentCol ? ' active' : '';
+      html += '<div class="col-picker-item' + sActive + '" data-col="' + sf.col + '" onclick="selectColumn(' + colIdx + ',\'' + sf.col + '\')">';
+      html += escapeHtml(sf.label);
+      html += '<span class="col-picker-cat">' + escapeHtml(sf.cat) + '</span>';
       html += '</div>';
       count++;
     }
