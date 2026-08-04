@@ -314,6 +314,7 @@
   <div class="btn-group">
     {% if can_manage %}
     <button class="btn btn-outline btn-sm col-reset-btn" onclick="resetColumns()" id="reset-btn" style="display:none">↺ 恢复默认列</button>
+    <button class="btn btn-outline btn-sm" onclick="openCustomFields()">⚙ 自定义字段</button>
     {% endif %}
     <a href="{{ url_for('export_materials') }}" class="btn btn-outline btn-sm">📥 导出全部</a>
     <a href="{{ url_for('import_page') }}" class="btn btn-primary btn-sm">📤 导入Excel</a>
@@ -387,6 +388,27 @@
   </div>
 </div>
 
+<!-- Custom Fields Management Modal -->
+<div id="custom-fields-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeCustomFields()">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h3>⚙ 管理自定义字段</h3>
+      <button class="modal-close" onclick="closeCustomFields()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">自定义字段会出现在列切换下拉框和物料详情中，可填写任意内容。</p>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input type="text" id="new-custom-field" class="form-input" placeholder="输入字段名，如：内部备注" style="flex:1" maxlength="30">
+        <button class="btn btn-primary btn-sm" onclick="addCustomField()">➕ 添加</button>
+      </div>
+      <div id="custom-fields-list" style="max-height:250px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeCustomFields()">关闭</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== Embedded Data =====
 const ALL_MATERIALS = {{ materials_json | safe }};
@@ -451,8 +473,44 @@ let columnConfig = [];
 let openPickerCol = null;
 
 // ===== Init =====
-function initColumns() {
+var customFieldsLoaded = false;
+
+async function loadCustomFields() {
+  if (!CAN_MANAGE) return;
+  try {
+    var resp = await fetch('/api/custom-fields');
+    var fields = await resp.json();
+    // Remove old custom field entries, then add fresh ones
+    ALL_FIELDS = ALL_FIELDS.filter(function(f){ return !f._custom; });
+    fields.forEach(function(cf){
+      ALL_FIELDS.push({col:'_custom_'+cf.id, label:cf.name, cat:'🏷 自定义', _custom:true, _id:cf.id});
+    });
+    customFieldsLoaded = true;
+  } catch(e) {}
+}
+
+function getField(col) {
+  var f = ALL_FIELDS.find(function(f){ return f.col === col; });
+  return f || {col:col, label:col, cat:''};
+}
+
+function fmtValue(col, val, customData) {
+  if (col.startsWith('_custom_')) {
+    if (customData) {
+      var fieldName = getField(col).label;
+      return customData[fieldName] || '-';
+    }
+    return val || '-';
+  }
+  if (val === null || val === undefined || val === '') return '-';
+  if (col === 'source_type') return SOURCE_LABELS[val] || val;
+  if (col === 'updated_at' || col === 'created_at') return String(val).substring(0, 16);
+  return String(val);
+}
+
+async function initColumns() {
   if (CAN_MANAGE) {
+    await loadCustomFields();
     const saved = localStorage.getItem('ml_columns');
     if (saved) {
       try { columnConfig = JSON.parse(saved); } catch(e) {}
@@ -478,16 +536,6 @@ function resetColumns() {
   closeAllPickers();
 }
 
-function getField(col) {
-  return ALL_FIELDS.find(function(f){ return f.col === col; }) || {col:col, label:col, cat:''};
-}
-
-function fmtValue(col, val) {
-  if (val === null || val === undefined || val === '') return '-';
-  if (col === 'source_type') return SOURCE_LABELS[val] || val;
-  if (col === 'updated_at' || col === 'created_at') return String(val).substring(0, 16);
-  return String(val);
-}
 
 // ===== Render =====
 function renderTable() {
@@ -511,10 +559,12 @@ function renderTable() {
   var bodyHtml = '';
   for (var r = 0; r < ALL_MATERIALS.length; r++) {
     var m = ALL_MATERIALS[r];
+    var cdata = {};
+    try { cdata = JSON.parse(m.custom_data || '{}'); } catch(e) {}
     bodyHtml += '<tr>';
     for (var c = 0; c < columnConfig.length; c++) {
       var col = columnConfig[c];
-      var val = fmtValue(col, m[col]);
+      var val = fmtValue(col, m[col], cdata);
       var cellClass = '';
       if (col === 'material_code') cellClass = ' style="font-weight:600"';
       if (col === 'updated_at' || col === 'created_at') cellClass = ' style="color:var(--text-muted);font-size:12px"';
@@ -689,6 +739,30 @@ function renderDetail(data) {
     }
     html += '</div></div>';
   }
+
+  // Custom fields
+  if (data.custom_fields && data.custom_fields.length > 0) {
+    html += '<div class="card"><div class="detail-section-title">🏷 自定义字段</div>';
+    html += '<div class="data-grid">';
+    var cd = data.custom_data || {};
+    for (var ci = 0; ci < data.custom_fields.length; ci++) {
+      var cf = data.custom_fields[ci];
+      var cval = cd[cf.name] || '';
+      html += '<div class="data-card">';
+      html += '<div class="dc-label">' + escapeHtml(cf.name) + '</div>';
+      if (CAN_MANAGE) {
+        html += '<input type="text" value="' + escapeHtml(cval) + '" placeholder="输入内容..."';
+        html += ' style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;background:var(--surface-1);color:var(--text-primary)"';
+        html += ' data-mat-id="' + data.id + '" data-field="' + escapeHtml(cf.name) + '"';
+        html += ' onchange="saveCustomData(this)" onblur="saveCustomData(this)">';
+      } else {
+        html += '<div class="dc-value' + (cval ? '' : ' empty') + '">' + (cval ? escapeHtml(cval) : '（未填写）') + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+
   html += '<div class="info-box" style="margin-top:8px">';
   html += '来源类型: <strong>' + escapeHtml(data.source_type || 'task') + '</strong> &nbsp;|&nbsp;';
   html += '创建时间: ' + fmtTime(data.created_at) + ' &nbsp;|&nbsp;';
@@ -698,6 +772,37 @@ function renderDetail(data) {
   }
   html += '</div>';
   document.getElementById('modal-body').innerHTML = html;
+}
+
+async function saveCustomData(input) {
+  var matId = input.dataset.matId;
+  var field = input.dataset.field;
+  var value = input.value;
+  try {
+    var resp = await fetch('/api/materials/' + matId + '/custom-data', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({field: field, value: value})
+    });
+    var result = await resp.json();
+    if (result.error) {
+      alert('保存失败: ' + result.error);
+    } else {
+      // Update the in-memory data so table reflects changes
+      for (var i = 0; i < ALL_MATERIALS.length; i++) {
+        if (ALL_MATERIALS[i].id === matId) {
+          var cd = {};
+          try { cd = JSON.parse(ALL_MATERIALS[i].custom_data || '{}'); } catch(e) {}
+          cd[field] = value;
+          ALL_MATERIALS[i].custom_data = JSON.stringify(cd);
+          break;
+        }
+      }
+      renderTable();
+    }
+  } catch(e) {
+    alert('保存失败: ' + e.message);
+  }
 }
 
 function closeDetail() {
@@ -744,6 +849,75 @@ var filterTimers = {};
     }
   });
 });
+
+// ===== Custom Fields Management =====
+function openCustomFields() {
+  document.getElementById('custom-fields-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderCustomFieldsList();
+}
+function closeCustomFields() {
+  document.getElementById('custom-fields-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function renderCustomFieldsList() {
+  var list = document.getElementById('custom-fields-list');
+  try {
+    var resp = await fetch('/api/custom-fields');
+    var fields = await resp.json();
+    if (fields.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px">暂无自定义字段</div>';
+      return;
+    }
+    var html = '';
+    fields.forEach(function(f){
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--gridline);font-size:13px">';
+      html += '<span>🏷 ' + escapeHtml(f.name) + '</span>';
+      html += '<button class="btn btn-outline btn-sm" style="color:var(--critical);border-color:var(--critical)" onclick="deleteCustomField(' + f.id + ',\'' + escapeHtml(f.name) + '\')">🗑</button>';
+      html += '</div>';
+    });
+    list.innerHTML = html;
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--critical);padding:10px">加载失败</div>';
+  }
+}
+
+async function addCustomField() {
+  var input = document.getElementById('new-custom-field');
+  var name = input.value.trim();
+  if (!name) { alert('请输入字段名'); return; }
+  try {
+    var resp = await fetch('/api/custom-fields', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: name})
+    });
+    var result = await resp.json();
+    if (result.error) { alert(result.error); return; }
+    input.value = '';
+    renderCustomFieldsList();
+    // Reload custom fields into ALL_FIELDS
+    await loadCustomFields();
+    renderTable();
+  } catch(e) {
+    alert('添加失败: ' + e.message);
+  }
+}
+
+async function deleteCustomField(id, name) {
+  if (!confirm('确认删除自定义字段「' + name + '」？\n已有数据不会丢失，只是不再显示此列。')) return;
+  try {
+    var resp = await fetch('/api/custom-fields?id=' + id, { method: 'DELETE' });
+    var result = await resp.json();
+    if (result.error) { alert(result.error); return; }
+    renderCustomFieldsList();
+    await loadCustomFields();
+    renderTable();
+  } catch(e) {
+    alert('删除失败: ' + e.message);
+  }
+}
 
 // ===== Init =====
 initColumns();

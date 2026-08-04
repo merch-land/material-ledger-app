@@ -202,8 +202,15 @@ def init_db():
         update_frequency TEXT DEFAULT '', attachment_note TEXT DEFAULT '',
         source_task_id INTEGER REFERENCES tasks(id),
         source_type TEXT DEFAULT 'task' CHECK(source_type IN ('task','manual','import')),
+        custom_data TEXT DEFAULT '{{}}',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS custom_fields (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE INDEX IF NOT EXISTS idx_ml_material_code ON material_library(material_code);
@@ -236,6 +243,12 @@ def init_db():
     # Migrate: add permissions to users
     try:
         db.execute("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '{}'")
+    except sqlite3.OperationalError:
+        pass
+
+    # Migrate: add custom_data to material_library
+    try:
+        db.execute("ALTER TABLE material_library ADD COLUMN custom_data TEXT DEFAULT '{}'")
     except sqlite3.OperationalError:
         pass
 
@@ -1522,6 +1535,9 @@ def material_detail(mat_id):
         'source_task_id': mat['source_task_id'],
         'created_at': mat['created_at'],
         'updated_at': mat['updated_at'],
+        'custom_data': json.loads(mat['custom_data'] or '{}'),
+        'custom_fields': [{'id': f['id'], 'name': f['name']} for f in
+                          db.execute("SELECT * FROM custom_fields ORDER BY created_at").fetchall()],
     })
 
 @app.route('/materials/<int:mat_id>/dashboard')
@@ -1569,6 +1585,70 @@ def material_delete(mat_id):
 # ============================================================
 # 筛选自动补全 API
 # ============================================================
+@app.route('/api/custom-fields', methods=['GET', 'POST', 'DELETE'])
+@login_required
+def api_custom_fields():
+    """管理自定义字段：GET 返回列表，POST 添加，DELETE 删除"""
+    user = get_current_user()
+    if not can_manage_library(user):
+        return jsonify({'error': '无权限'}), 403
+    db = get_db()
+
+    if request.method == 'GET':
+        fields = db.execute("SELECT * FROM custom_fields ORDER BY created_at").fetchall()
+        return jsonify([{'id': f['id'], 'name': f['name']} for f in fields])
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        name = (data.get('name') or '').strip()
+        if not name or len(name) > 30:
+            return jsonify({'error': '字段名不能为空且不超过30字'}), 400
+        existing = db.execute("SELECT id FROM custom_fields WHERE name=?", [name]).fetchone()
+        if existing:
+            return jsonify({'error': f'字段「{name}」已存在'}), 400
+        db.execute("INSERT INTO custom_fields (name) VALUES (?)", [name])
+        db.commit()
+        fid = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+        return jsonify({'id': fid, 'name': name})
+
+    elif request.method == 'DELETE':
+        fid = request.args.get('id', type=int)
+        if not fid:
+            return jsonify({'error': '缺少字段ID'}), 400
+        db.execute("DELETE FROM custom_fields WHERE id=?", [fid])
+        db.commit()
+        return jsonify({'success': True})
+
+@app.route('/api/materials/<int:mat_id>/custom-data', methods=['POST'])
+@login_required
+def update_custom_data(mat_id):
+    """更新某条物料的自定义数据"""
+    user = get_current_user()
+    if not can_manage_library(user):
+        return jsonify({'error': '无权限'}), 403
+    db = get_db()
+    mat = db.execute("SELECT id, custom_data FROM material_library WHERE id=?", [mat_id]).fetchone()
+    if not mat:
+        return jsonify({'error': '物料不存在'}), 404
+
+    data = request.get_json()
+    try:
+        current = json.loads(mat['custom_data'] or '{}')
+    except json.JSONDecodeError:
+        current = {}
+
+    field_name = (data.get('field') or '').strip()
+    value = (data.get('value') or '').strip()
+
+    if not field_name:
+        return jsonify({'error': '缺少字段名'}), 400
+
+    current[field_name] = value
+    db.execute("UPDATE material_library SET custom_data=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+               [json.dumps(current, ensure_ascii=False), mat_id])
+    db.commit()
+    return jsonify({'success': True, 'value': value})
+
 @app.route('/api/filter-options')
 @login_required
 def api_filter_options():
